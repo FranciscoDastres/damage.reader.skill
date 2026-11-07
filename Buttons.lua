@@ -138,8 +138,11 @@ function ButtonManager:CreateOverlay(button)
 
     local text = button:CreateFontString(nil, "OVERLAY")
     text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", ns.db.fontSize, "OUTLINE")
-    text:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -2, 3)
+    text:ClearAllPoints()
+    text:SetPoint("CENTER", button, "CENTER", 0, -7)
+    text:SetDrawLayer("OVERLAY", 7)
     text:SetJustifyH("RIGHT")
+    text:SetShadowOffset(1, -1)
     text:SetTextColor(unpack(ns.db.color))
     text:Hide()
 

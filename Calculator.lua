@@ -23,6 +23,37 @@ local DAMAGE_WORDS = {
     "inflige",
 }
 
+local IGNORE_WORDS = {
+    "mana",
+    "maná",
+    "rage",
+    "ira",
+    "energy",
+    "energía",
+    "cost",
+    "coste",
+    "costs",
+    "requiere",
+    "requires",
+    "range",
+    "rango",
+    "yard",
+    "yards",
+    "metros",
+    "sec",
+    "seg",
+    "second",
+    "segundo",
+    "cooldown",
+    "recarga",
+    "duration",
+    "duración",
+    "level",
+    "nivel",
+    "rank",
+    "rango",
+}
+
 local scannerTooltip
 
 local function isSafe(value)
@@ -65,6 +96,37 @@ local function hasDamageWord(description)
     return false
 end
 
+local function nearestWordDistance(description, startAt, endAt, words)
+    local lower = string.lower(description)
+    local nearest
+
+    for _, word in ipairs(words) do
+        local searchAt = 1
+        while true do
+            local wordStart, wordEnd = string.find(lower, word, searchAt, true)
+            if not wordStart then
+                break
+            end
+
+            local distance
+            if wordEnd < startAt then
+                distance = startAt - wordEnd
+            elseif wordStart > endAt then
+                distance = wordStart - endAt
+            else
+                distance = 0
+            end
+
+            if not nearest or distance < nearest then
+                nearest = distance
+            end
+            searchAt = wordEnd + 1
+        end
+    end
+
+    return nearest
+end
+
 local function isPercentOrDuration(description, startAt, endAt)
     local after = string.sub(description, endAt + 1, endAt + 8)
     local before = string.sub(description, math.max(1, startAt - 2), startAt - 1)
@@ -73,34 +135,68 @@ local function isPercentOrDuration(description, startAt, endAt)
         or string.find(before, "%%", 1, true)
 end
 
+local function isIgnoredNumber(description, startAt, endAt)
+    local token = string.sub(description, startAt, endAt)
+    if string.sub(token, 1, 1) == "-" then
+        return true
+    end
+
+    if string.sub(description, math.max(1, startAt - 1), startAt - 1) == "-" then
+        return true
+    end
+
+    if isPercentOrDuration(description, startAt, endAt) then
+        return true
+    end
+
+    local context = string.lower(string.sub(description, math.max(1, startAt - 28), endAt + 28))
+    for _, word in ipairs(IGNORE_WORDS) do
+        if string.find(context, word, 1, true) then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function extractValue(description)
     if not description or not hasDamageWord(description) then
         return nil
     end
 
-    local rangeStart, rangeEnd, first, second = string.find(
+    local bestValue
+    local bestDistance
+
+    for rangeStart, first, second in string.gmatch(
         description,
-        "(%d[%d,]*)%s*[%-%–—]%s*(%d[%d,]*)"
-    )
-    if first and second and not isPercentOrDuration(description, rangeStart, rangeEnd) then
-        local minimum = parseNumber(first)
-        local maximum = parseNumber(second)
-        if minimum and maximum then
-            return (minimum + maximum) / 2
+        "()(%d[%d,]*)%s*[%-%–—]%s*(%d[%d,]*)"
+    ) do
+        local rangeEnd = rangeStart + string.len(first) + string.len(second)
+        local distance = nearestWordDistance(description, rangeStart, rangeEnd, DAMAGE_WORDS)
+        if distance and distance <= 80
+            and not isIgnoredNumber(description, rangeStart, rangeStart + string.len(first) - 1) then
+            local minimum = parseNumber(first)
+            local maximum = parseNumber(second)
+            if minimum and maximum and (not bestDistance or distance < bestDistance) then
+                bestValue = (minimum + maximum) / 2
+                bestDistance = distance
+            end
         end
     end
 
     for startAt, token in string.gmatch(description, "()(%d[%d,]*%.?%d*)") do
         local endAt = startAt + string.len(token) - 1
-        if not isPercentOrDuration(description, startAt, endAt) then
+        local distance = nearestWordDistance(description, startAt, endAt, DAMAGE_WORDS)
+        if distance and distance <= 80 and not isIgnoredNumber(description, startAt, endAt) then
             local number = parseNumber(token)
-            if number and number >= 2 then
-                return number
+            if number and number >= 2 and (not bestDistance or distance < bestDistance) then
+                bestValue = number
+                bestDistance = distance
             end
         end
     end
 
-    return nil
+    return bestValue
 end
 
 local function formatValue(value)
@@ -110,7 +206,7 @@ local function formatValue(value)
     if value >= 1000 then
         return string.format("~%.1fK", value / 1000)
     end
-    return string.format("~%d", math.floor(value + 0.5))
+    return string.format("%d", math.floor(value + 0.5))
 end
 
 local function getTooltipDescription(spellID)
