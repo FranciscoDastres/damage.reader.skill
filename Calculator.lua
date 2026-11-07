@@ -145,6 +145,14 @@ function Calculator:GetSpellDescription(spellID)
         end
     end
 
+    if type(GetSpellDescription) == "function" then
+        local ok, description = pcall(GetSpellDescription, spellID)
+        description = ok and safeString(description) or nil
+        if description and description ~= "" then
+            return description
+        end
+    end
+
     return getTooltipDescription(spellID)
 end
 
@@ -155,6 +163,16 @@ function Calculator:GetActionInfo(actionSlot)
 
     if C_ActionBar and C_ActionBar.GetActionInfo then
         local ok, actionType, actionID, subType = pcall(C_ActionBar.GetActionInfo, actionSlot)
+        if not ok or not isSafe(actionType) or not isSafe(actionID) then
+            return nil
+        end
+        return actionType, actionID, subType
+    end
+
+    -- Forever puede exponer esta función como global aunque no tenga
+    -- el namespace C_ActionBar disponible.
+    if type(GetActionInfo) == "function" then
+        local ok, actionType, actionID, subType = pcall(GetActionInfo, actionSlot)
         if not ok or not isSafe(actionType) or not isSafe(actionID) then
             return nil
         end

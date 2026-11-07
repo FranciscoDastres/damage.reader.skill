@@ -76,7 +76,11 @@ function ns:HandleCommand(rawMessage)
             self.Buttons:Discover()
             self:Print("botones de acción encontrados: " .. tostring(#self.Buttons.buttons))
         end
-        self:Print("API C_ActionBar: " .. (C_ActionBar and C_ActionBar.GetActionInfo and "disponible" or "no disponible"))
+        local actionAPI = C_ActionBar and C_ActionBar.GetActionInfo
+        if not actionAPI and type(GetActionInfo) == "function" then
+            actionAPI = true
+        end
+        self:Print("API de acciones: " .. (actionAPI and "disponible" or "no disponible"))
         return
     end
 
