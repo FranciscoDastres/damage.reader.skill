@@ -13,7 +13,17 @@ local DAMAGE_WORDS = {
     "strikes",
     "hits",
     "deals",
+    "daño",
+    "daños",
+    "cura",
+    "curación",
+    "sana",
+    "restaura",
+    "golpea",
+    "inflige",
 }
+
+local scannerTooltip
 
 local function isSafe(value)
     if value == nil then
@@ -41,7 +51,8 @@ local function parseNumber(value)
     if not value then
         return nil
     end
-    return tonumber((value:gsub(",", "")))
+    local normalized = value:gsub(",", "")
+    return tonumber(normalized)
 end
 
 local function hasDamageWord(description)
@@ -132,9 +143,88 @@ local function getTooltipDescription(spellID)
     return table.concat(parts, " ")
 end
 
-function Calculator:GetSpellDescription(spellID)
+local function appendTooltipLines(data, parts)
+    if type(data) ~= "table" or type(data.lines) ~= "table" then
+        return
+    end
+
+    for _, line in ipairs(data.lines) do
+        if type(line) == "table" then
+            local left = safeString(line.leftText)
+            local right = safeString(line.rightText)
+            if left then
+                table.insert(parts, left)
+            end
+            if right then
+                table.insert(parts, right)
+            end
+        end
+    end
+end
+
+local function getActionTooltipDescription(actionSlot)
+    local parts = {}
+
+    if C_TooltipInfo and C_TooltipInfo.GetAction then
+        local ok, data = pcall(C_TooltipInfo.GetAction, actionSlot)
+        if ok then
+            appendTooltipLines(data, parts)
+        end
+    end
+
+    if #parts > 0 then
+        return table.concat(parts, " ")
+    end
+
+    if not scannerTooltip then
+        scannerTooltip = CreateFrame(
+            "GameTooltip",
+            "DamageReaderSkillScannerTooltip",
+            UIParent,
+            "GameTooltipTemplate"
+        )
+        scannerTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    end
+
+    scannerTooltip:ClearLines()
+    local ok = false
+    if scannerTooltip.SetAction then
+        ok = pcall(scannerTooltip.SetAction, scannerTooltip, actionSlot)
+    end
+    if not ok then
+        return nil
+    end
+
+    scannerTooltip:Show()
+    local lineCount = scannerTooltip.NumLines and scannerTooltip:NumLines() or 0
+    for index = 1, lineCount do
+        local left = safeString(_G["DamageReaderSkillScannerTooltipTextLeft" .. index]
+            and _G["DamageReaderSkillScannerTooltipTextLeft" .. index]:GetText())
+        local right = safeString(_G["DamageReaderSkillScannerTooltipTextRight" .. index]
+            and _G["DamageReaderSkillScannerTooltipTextRight" .. index]:GetText())
+        if left then
+            table.insert(parts, left)
+        end
+        if right then
+            table.insert(parts, right)
+        end
+    end
+    scannerTooltip:Hide()
+
+    if #parts == 0 then
+        return nil
+    end
+    return table.concat(parts, " ")
+end
+
+function Calculator:GetSpellDescription(spellID, actionSlot)
     if not isSafe(spellID) or type(spellID) ~= "number" then
         return nil
+    end
+
+    local actionDescription = actionSlot and getActionTooltipDescription(actionSlot)
+    if actionDescription and actionDescription ~= "" then
+        return actionDescription
     end
 
     if C_Spell and C_Spell.GetSpellDescription then
@@ -203,5 +293,11 @@ function Calculator:EstimateAction(actionSlot)
     if actionType ~= "spell" or not isSafe(actionID) or type(actionID) ~= "number" then
         return nil
     end
-    return self:EstimateSpell(actionID)
+    local description = self:GetSpellDescription(actionID, actionSlot)
+    local value = extractValue(description)
+    if not value then
+        return nil
+    end
+
+    return { value = value, text = formatValue(value), source = "action-tooltip" }
 end
