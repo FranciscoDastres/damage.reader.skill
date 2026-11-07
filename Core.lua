@@ -71,7 +71,12 @@ function ns:HandleCommand(rawMessage)
 
     if message == "" or message == "status" then
         self:Print("/drs on | off | refresh | reset | debug")
-        self:Print("estado: " .. (self.db.enabled and "activado" or "desactivado"))
+        self:Print("estado: " .. (self.db and self.db.enabled and "activado" or "desactivado"))
+        if self.Buttons then
+            self.Buttons:Discover()
+            self:Print("botones de acción encontrados: " .. tostring(#self.Buttons.buttons))
+        end
+        self:Print("API C_ActionBar: " .. (C_ActionBar and C_ActionBar.GetActionInfo and "disponible" or "no disponible"))
         return
     end
 
@@ -124,6 +129,7 @@ function ns:OnEvent(event, addonName)
             return
         end
         self:InitializeDatabase()
+        self:Print("addon cargado v" .. self.version .. ". Usa /drs status para diagnosticar.")
         return
     end
 
