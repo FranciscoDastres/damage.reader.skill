@@ -23,7 +23,7 @@ La ruta exacta del producto puede variar entre versiones del launcher de Forever
 
 ## Alcance de esta versión
 
-- Usa únicamente la API moderna de Forever (`C_ActionBar`, `C_Spell` y `C_TooltipInfo` cuando están disponibles).
+- Usa la API de acciones expuesta por Forever: primero intenta `C_ActionBar` y, cuando el cliente no ofrece ese namespace, utiliza el `GetActionInfo` global disponible en algunas builds. También usa `C_Spell` y `C_TooltipInfo` cuando están disponibles.
 - No usa el combat log, lectura de eventos de daño, automatización de acciones, macros, código ejecutable externo ni decisiones protegidas durante combate.
 - Oculta el overlay durante combate si la información de acción puede ser un valor secreto.
 - No contiene tablas, código ni archivos tomados de DrDamage.
