@@ -18,6 +18,7 @@ La ruta exacta del producto puede variar entre versiones del launcher de Forever
 - `/drs on`: activa los números.
 - `/drs off`: los desactiva.
 - `/drs refresh`: fuerza la actualización de las barras.
+- `/drs scan`: muestra qué acciones y hechizos puede leer el cliente.
 - `/drs reset`: restablece la configuración.
 - `/drs debug`: activa mensajes de diagnóstico.
 

@@ -52,28 +52,83 @@ function ButtonManager:Discover()
 end
 
 local function getActionSlot(button)
+    local function validSlot(slot)
+        return isSafe(slot) and type(slot) == "number" and slot > 0
+    end
+
     if type(ActionButton_GetPagedID) == "function" then
         local ok, slot = pcall(ActionButton_GetPagedID, button)
-        if ok and isSafe(slot) and type(slot) == "number" then
+        if ok and validSlot(slot) then
             return slot
         end
     end
 
     if button.GetAttribute then
         local ok, slot = pcall(button.GetAttribute, button, "action")
-        if ok and isSafe(slot) and type(slot) == "number" then
+        if ok and validSlot(slot) then
             return slot
         end
     end
 
     local candidates = { button.actionID, button.action }
     for _, slot in ipairs(candidates) do
-        if isSafe(slot) and type(slot) == "number" then
+        if validSlot(slot) then
             return slot
         end
     end
 
+    local buttonName = button.GetName and button:GetName() or ""
+    local index = tonumber(string.match(buttonName, "(%d+)$"))
+    if index then
+        if string.match(buttonName, "^ActionButton") then
+            return index
+        elseif string.match(buttonName, "^MultiBarBottomLeftButton") then
+            return 60 + index
+        elseif string.match(buttonName, "^MultiBarBottomRightButton") then
+            return 48 + index
+        elseif string.match(buttonName, "^MultiBarRightButton") then
+            return 24 + index
+        elseif string.match(buttonName, "^MultiBarLeftButton") then
+            return 36 + index
+        elseif string.match(buttonName, "^MultiBar5Button") then
+            return 72 + index
+        elseif string.match(buttonName, "^MultiBar6Button") then
+            return 84 + index
+        elseif string.match(buttonName, "^MultiBar7Button") then
+            return 96 + index
+        end
+    end
+
     return nil
+end
+
+function ButtonManager:DebugScan()
+    local printed = 0
+    for _, button in ipairs(self.buttons) do
+        local slot = getActionSlot(button)
+        if slot then
+            local actionType, actionID = ns.Calculator:GetActionInfo(slot)
+            if actionType then
+                local estimate = ns.Calculator:EstimateAction(slot)
+                local buttonName = button.GetName and button:GetName() or "button"
+                local value = estimate and estimate.text or "sin número"
+                ns:Print(buttonName .. " slot=" .. tostring(slot)
+                    .. " tipo=" .. tostring(actionType)
+                    .. " id=" .. tostring(actionID)
+                    .. " => " .. value)
+                printed = printed + 1
+                if printed >= 20 then
+                    break
+                end
+            end
+        end
+    end
+
+    if printed == 0 then
+        ns:Print("scan: no se pudo leer ninguna acción colocada en las barras.")
+    else
+        ns:Print("scan: se muestran hasta 20 acciones detectadas.")
+    end
 end
 
 function ButtonManager:CreateOverlay(button)

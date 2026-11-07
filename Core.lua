@@ -104,6 +104,14 @@ function ns:HandleCommand(rawMessage)
         return
     end
 
+    if message == "scan" then
+        if self.Buttons then
+            self.Buttons:Discover()
+            self.Buttons:DebugScan()
+        end
+        return
+    end
+
     if message == "reset" then
         DamageReaderSkillDB = {}
         self:InitializeDatabase()
