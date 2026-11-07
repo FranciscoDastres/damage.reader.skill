@@ -313,6 +313,51 @@ local function getActionTooltipDescription(actionSlot)
     return table.concat(parts, " ")
 end
 
+local function getSpellTooltipDescription(spellID)
+    if not scannerTooltip then
+        scannerTooltip = CreateFrame(
+            "GameTooltip",
+            "DamageReaderSkillScannerTooltip",
+            UIParent,
+            "GameTooltipTemplate"
+        )
+        scannerTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    end
+
+    scannerTooltip:ClearLines()
+    local ok = false
+    if scannerTooltip.SetSpellByID then
+        ok = pcall(scannerTooltip.SetSpellByID, scannerTooltip, spellID)
+    elseif scannerTooltip.SetSpell then
+        ok = pcall(scannerTooltip.SetSpell, scannerTooltip, spellID)
+    end
+    if not ok then
+        return nil
+    end
+
+    scannerTooltip:Show()
+    local parts = {}
+    local lineCount = scannerTooltip.NumLines and scannerTooltip:NumLines() or 0
+    for index = 1, lineCount do
+        local left = safeString(_G["DamageReaderSkillScannerTooltipTextLeft" .. index]
+            and _G["DamageReaderSkillScannerTooltipTextLeft" .. index]:GetText())
+        local right = safeString(_G["DamageReaderSkillScannerTooltipTextRight" .. index]
+            and _G["DamageReaderSkillScannerTooltipTextRight" .. index]:GetText())
+        if left then
+            table.insert(parts, left)
+        end
+        if right then
+            table.insert(parts, right)
+        end
+    end
+    scannerTooltip:Hide()
+
+    if #parts == 0 then
+        return nil
+    end
+    return table.concat(parts, " ")
+end
+
 function Calculator:GetSpellDescription(spellID, actionSlot)
     if not isSafe(spellID) or type(spellID) ~= "number" then
         return nil
@@ -339,7 +384,12 @@ function Calculator:GetSpellDescription(spellID, actionSlot)
         end
     end
 
-    return getTooltipDescription(spellID)
+    local spellTooltip = getTooltipDescription(spellID)
+    if spellTooltip and spellTooltip ~= "" then
+        return spellTooltip
+    end
+
+    return getSpellTooltipDescription(spellID)
 end
 
 function Calculator:GetActionInfo(actionSlot)
