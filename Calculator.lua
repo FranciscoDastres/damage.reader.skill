@@ -120,23 +120,28 @@ local function structured(fn, id)
     if not ok or not readable(data, "table") or not readable(data.lines, "table") then return end
     local lines = {}
     for _, line in ipairs(data.lines) do
+        if not readable(line, "table") then return end
+        -- Never build a partial description from a tooltip with hidden amounts.
+        if type(issecretvalue) == "function" and issecretvalue(line.leftText) then return end
         if readable(line.leftText, "string") then lines[#lines + 1] = line.leftText end
     end
     return table.concat(lines, "\n")
 end
 function Calculator:GetActionInfo(slot)
-    if combat() or not readable(slot, "number") then return end
+    if not readable(slot, "number") then return end
     local fn = C_ActionBar and C_ActionBar.GetActionInfo or GetActionInfo
     if type(fn) ~= "function" then return end
     local ok, kind, id, subtype = pcall(fn, slot)
     if ok and readable(kind, "string") and readable(id, "number") then return kind, id, subtype end
+    if ok and (type(issecretvalue) ~= "function" or not issecretvalue(kind)) and kind == nil then
+        return "empty"
+    end
 end
 function Calculator:GetSources(id, slot)
     local sources = {}
     local function add(text, name)
         if readable(text, "string") and text ~= "" then sources[#sources + 1] = {text = text, name = name} end
     end
-    if combat() then return sources end
     if slot then
         add(structured(C_TooltipInfo and C_TooltipInfo.GetAction, slot), "C_TooltipInfo.GetAction")
         add(scan("SetAction", slot), "GameTooltip:SetAction")

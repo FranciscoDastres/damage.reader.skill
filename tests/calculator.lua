@@ -40,7 +40,7 @@ C_Spell = {GetSpellDescription = function() return "Heals the target for 88 to 1
 C_TooltipInfo = {GetAction = function() return {lines = {{leftText = "40 mana"}}} end}
 assert(calc:EstimateAction(1).value == 97)
 fighting = true
-GetActionInfo = function() error("must not read combat actions") end
+GetActionInfo = function() error("simulated unavailable action API") end
 assert(calc:EstimateAction(1) == nil)
 fighting = false
 -- The guard must recognize a protected object before touching/comparing it.

@@ -22,7 +22,7 @@ issecretvalue = function(value) return rawequal(value, hidden) end
 UnitDamage = function() return low, high, 5.9285717010498, 5.9285717010498, 0, 0, 1 end
 GetActionInfo = function(slot) return "spell", slot end
 C_UnitAuras = {GetAuraDataByIndex = function(unit, index, filter)
-    assert(unit == "player" and filter == "HELPFUL" and not fighting)
+    assert(unit == "player" and filter == "HELPFUL")
     if index == 1 and seal then return {spellId = seal} end
 end}
 C_Spell = {GetSpellDescription = function(id) return descriptions[id] end}

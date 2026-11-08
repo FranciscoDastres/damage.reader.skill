@@ -1,0 +1,124 @@
+local ns = {}
+local fighting, hidden = false, {}
+local weaponLow, weaponHigh = 20, 24
+local seal, protectedAction, protectedText = 21084, false, false
+local actionID = 679
+local queued, scripts = {}, {}
+GetBuildInfo = function() return "1.60.1", "70862", "", 16001 end
+GetLocale = function() return "esMX" end
+InCombatLockdown = function() return fighting end
+issecretvalue = function(value) return rawequal(value, hidden) end
+UnitDamage = function() return weaponLow, weaponHigh end
+GetActionInfo = function()
+    if protectedAction then return hidden, hidden end
+    if actionID then return "spell", actionID end
+end
+local descriptions = {
+    [679] = "Un golpe instantáneo que inflige un 25% de daño con arma y 2 a 4 p. de daño Sagrado.",
+    [21084] = "Desatar la energía de este sello inflige 24 a 27 p. de daño Sagrado a un enemigo.",
+    [639] = "Sana un objetivo amistoso en 78 a 93 p.",
+}
+C_Spell = {GetSpellDescription = function(id)
+    if protectedText then return hidden end
+    return descriptions[id]
+end}
+C_UnitAuras = {GetAuraDataByIndex = function(_, index)
+    if index == 1 and seal then return {spellId = seal} end
+end}
+-- No GameTooltip scanning or new overlay construction is allowed in combat.
+local frame = {}
+function frame:SetScript(name, fn) scripts[name] = fn end
+function frame:RegisterEvent() end
+CreateFrame = function(kind)
+    assert(not fighting, "created a frame during combat")
+    if kind == "GameTooltip" then return {SetOwner = function() end, ClearLines = function() end, Hide = function() end} end
+    return frame
+end
+C_Timer = {After = function(_, fn) queued[#queued + 1] = fn end}
+SlashCmdList = {}
+assert(loadfile("Core.lua"))("damage.reader.skill", ns)
+assert(loadfile("Calculator.lua"))("damage.reader.skill", ns)
+assert(loadfile("Paladin.lua"))("damage.reader.skill", ns)
+assert(loadfile("Buttons.lua"))("damage.reader.skill", ns)
+ns:InitializeDatabase()
+local label = {}
+function label:SetFont() end
+function label:SetTextColor(r, g, b) self.color = {r, g, b} end
+function label:SetText(text) self.value = text end
+function label:Show() self.visible = true end
+function label:Hide() self.visible = false end
+ActionButton1 = {action = 1, DamageReaderSkillText = label,
+    CreateFontString = function() error("overlay already exists") end}
+local function flush()
+    local current = queued
+    queued = {}
+    for _, fn in ipairs(current) do fn() end
+end
+local function event(name, unit)
+    scripts.OnEvent(frame, name, unit)
+    flush()
+end
+ns:Refresh()
+assert(label.value == "9" and label.visible)
+fighting = true
+event("PLAYER_REGEN_DISABLED")
+assert(label.value == "9" and label.visible)
+weaponLow, weaponHigh = 40, 60
+event("UNIT_DAMAGE", "player")
+assert(label.value == "16" and not ActionButton1.DamageReaderSkillStale)
+weaponLow, weaponHigh = 20, 24
+event("UNIT_AURA", "player") -- proc expires
+assert(label.value == "9")
+weaponLow = hidden
+event("UNIT_DAMAGE", "player")
+assert(label.value == "~9" and label.visible and ActionButton1.DamageReaderSkillStale)
+weaponLow = 20
+event("UNIT_DAMAGE", "player")
+assert(label.value == "9" and not ActionButton1.DamageReaderSkillStale)
+protectedText = true
+event("UNIT_AURA", "player")
+assert(label.value == "~9" and label.visible)
+protectedText = false
+event("UNIT_AURA", "player")
+assert(label.value == "9")
+protectedAction = true
+event("UNIT_AURA", "player")
+assert(label.value == "~9")
+event("ACTIONBAR_PAGE_CHANGED")
+assert(not label.visible and not ActionButton1.DamageReaderSkillResult)
+protectedAction = false
+actionID = 20271
+event("ACTIONBAR_SLOT_CHANGED")
+assert(label.value == "26" and label.visible)
+seal = 21082
+event("UNIT_AURA", "player")
+assert(label.value == "0")
+seal = hidden
+event("UNIT_AURA", "player")
+assert(label.value == "~0")
+seal = nil
+event("UNIT_AURA", "player")
+assert(not label.visible) -- a known absent seal clears the old number
+actionID = 639
+event("ACTIONBAR_SLOT_CHANGED")
+assert(label.value == "86" and label.color[2] == 1)
+descriptions[639] = "Sana un objetivo amistoso en 100 a 120 p."
+event("SPELL_POWER_CHANGED")
+assert(label.value == "110" and label.color[2] == 1)
+protectedText = true
+event("UNIT_AURA", "player")
+assert(label.value == "~110")
+protectedText = false
+fighting = false
+event("PLAYER_REGEN_ENABLED")
+assert(label.value == "110" and not ActionButton1.DamageReaderSkillStale)
+actionID = nil
+event("ACTIONBAR_SLOT_CHANGED")
+assert(not label.visible)
+-- Many proc/stat events coalesce into one refresh, unrelated units do not queue.
+event("UNIT_AURA", "target")
+assert(#queued == 0)
+for i = 1, 50 do scripts.OnEvent(frame, "UNIT_AURA", "player") end
+assert(#queued == 1)
+flush()
+print("Combat integration passed: procs, expiry, seals, hidden data, paging, healing, exit and event coalescing")

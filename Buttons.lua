@@ -69,6 +69,9 @@ local function getActionSlot(button)
         end
     end
 
+    -- A protected binding cannot be reconstructed from its name in combat.
+    if ButtonManager.inCombat then return nil end
+
     local buttonName = button.GetName and button:GetName() or ""
     local index = tonumber(string.match(buttonName, "(%d+)$"))
     if index then
@@ -131,6 +134,8 @@ function ButtonManager:CreateOverlay(button)
     if button.DamageReaderSkillText then
         return button.DamageReaderSkillText
     end
+    -- Create and hook protected action-button children only out of combat.
+    if self.inCombat then return nil end
 
     local text = button:CreateFontString(nil, "OVERLAY")
     text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", ns.db.fontSize, "OUTLINE")
@@ -174,27 +179,59 @@ end
 
 function ButtonManager:HideButton(button)
     button.DamageReaderSkillResult = nil
+    button.DamageReaderSkillSlot = nil
+    button.DamageReaderSkillSpellID = nil
+    button.DamageReaderSkillStale = nil
     if button.DamageReaderSkillText then
         button.DamageReaderSkillText:Hide()
     end
 end
 
+function ButtonManager:KeepLast(button)
+    local value, text = button.DamageReaderSkillResult, button.DamageReaderSkillText
+    if value and text then
+        button.DamageReaderSkillStale = true
+        text:SetText("~" .. value.text)
+        text:Show()
+    end
+end
+
+function ButtonManager:InvalidateActions()
+    -- Paging, replacement and removal invalidate identity even if IDs are secret.
+    for _, button in ipairs(self.buttons) do self:HideButton(button) end
+end
+
 function ButtonManager:UpdateButton(button)
-    if not ns.db or not ns.db.enabled or self.inCombat then
+    if not ns.db or not ns.db.enabled then
         self:HideButton(button)
         return
     end
     local text = self:CreateOverlay(button)
+    if not text then return end
 
-    local actionSlot = getActionSlot(button)
+    local slotOK, actionSlot = pcall(getActionSlot, button)
+    if not slotOK then actionSlot = nil end
     if not actionSlot then
-        self:HideButton(button)
+        if self.inCombat then self:KeepLast(button) else self:HideButton(button) end
         return
     end
-
-    local result = ns.Calculator:EstimateAction(actionSlot)
-    if not result or not result.text then
+    if button.DamageReaderSkillSlot and button.DamageReaderSkillSlot ~= actionSlot then
         self:HideButton(button)
+    end
+
+    local kind, id = ns.Calculator:GetActionInfo(actionSlot)
+    if not kind then
+        if self.inCombat then self:KeepLast(button) else self:HideButton(button) end
+        return
+    end
+    if kind ~= "spell" then self:HideButton(button); return end
+    if button.DamageReaderSkillSpellID and button.DamageReaderSkillSpellID ~= id then
+        self:HideButton(button)
+    end
+    local ok, result, reason, state = pcall(ns.Calculator.EstimateAction, ns.Calculator, actionSlot)
+    if not ok then result = nil end
+    if not result or not result.text then
+        if self.inCombat and state ~= "empty" then self:KeepLast(button) else self:HideButton(button) end
         return
     end
 
@@ -203,6 +240,9 @@ function ButtonManager:UpdateButton(button)
     text:SetTextColor(unpack(color))
     text:SetText(result.text)
     button.DamageReaderSkillResult = result
+    button.DamageReaderSkillSlot = actionSlot
+    button.DamageReaderSkillSpellID = id
+    button.DamageReaderSkillStale = false
     text:Show()
 end
 
@@ -214,9 +254,4 @@ end
 
 function ButtonManager:SetInCombat(inCombat)
     self.inCombat = inCombat
-    if inCombat then
-        for _, button in ipairs(self.buttons) do
-            self:HideButton(button)
-        end
-    end
 end

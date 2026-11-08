@@ -1,7 +1,7 @@
 local ADDON_NAME, ns = ...
 
 ns.name = ADDON_NAME or "damage.reader.skill"
-ns.version = "0.3.0"
+ns.version = "0.4.0"
 
 local DEFAULTS = {
     enabled = true,
@@ -44,6 +44,9 @@ function ns:Refresh(reason)
     end
 
     if self.Buttons then
+        if type(InCombatLockdown) == "function" then
+            self.Buttons:SetInCombat(InCombatLockdown())
+        end
         self.Buttons:Discover()
         self.Buttons:UpdateAll()
     end
@@ -224,6 +227,7 @@ function ns:OnEvent(event, addonName)
         if self.Buttons then
             self.Buttons:SetInCombat(true)
         end
+        self:ScheduleRefresh("inicio de combate")
         return
     end
 
@@ -235,7 +239,13 @@ function ns:OnEvent(event, addonName)
         return
     end
 
-    if event:match("^UNIT_") and addonName ~= "player" then return end
+    if event == "ACTIONBAR_SLOT_CHANGED" or event == "ACTIONBAR_PAGE_CHANGED"
+        or event:match("^UPDATE_.*ACTIONBAR$") or event == "SPELLS_CHANGED" then
+        if self.Buttons then self.Buttons:InvalidateActions() end
+    end
+    if event:match("^UNIT_") then
+        if not self.Calculator:IsReadable(addonName) or addonName ~= "player" then return end
+    end
     self:ScheduleRefresh(event)
 end
 

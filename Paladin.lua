@@ -8,7 +8,6 @@ local function safe(value, kind)
     return calc:IsReadable(value) and type(value) == kind
 end
 local function supported()
-    if type(InCombatLockdown) == "function" and InCombatLockdown() then return false end
     if type(GetBuildInfo) ~= "function" then return false end
     return select(4, GetBuildInfo()) == 16001
 end
@@ -20,7 +19,7 @@ local function estimate(low, high, metric, evidence, id)
 end
 
 local function holyStrike(id, slot)
-    if not supported() then return nil, "modelo requiere Forever 16001 fuera de combate" end
+    if not supported() then return nil, "modelo requiere Forever 16001" end
     for _, source in ipairs(calc:GetSources(id, slot)) do
         -- Restrict this formula to the exact construction supplied by the client.
         local pct, low, high = source.text:match("(%d+)%% de daño con arma y (%d+) a (%d+) p%. de daño Sagrado")
@@ -48,7 +47,7 @@ local function holyStrike(id, slot)
 end
 
 local function rectitude(id, slot, judgment)
-    if not supported() then return nil, "modelo requiere Forever 16001 fuera de combate" end
+    if not supported() then return nil, "modelo requiere Forever 16001" end
     for _, source in ipairs(calc:GetSources(id, slot)) do
         local low, high
         if judgment then
@@ -69,7 +68,7 @@ local function rectitude(id, slot, judgment)
                 value.details = {"Daño adicional del sello, no el daño de Sentencia.",
                     "El cliente indica dependencia de velocidad de arma; se muestra el rango, sin inventar un promedio."}
             else
-                value.details = {"Se usa únicamente el sello activo leído fuera de combate.",
+                value.details = {"Se usa únicamente el sello activo legible.",
                     "Antes de resistencias, crítico y modificadores del objetivo."}
             end
             return value
@@ -79,7 +78,7 @@ local function rectitude(id, slot, judgment)
 end
 
 function calc:GetActiveSeal()
-    if not supported() then return nil, "sello no legible durante combate o build no soportada" end
+    if not supported() then return nil, "build no soportada" end
     local fn = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex
     if type(fn) ~= "function" then return nil, "API de auras no disponible" end
     local active, uncertain
@@ -101,12 +100,13 @@ function calc:GetActiveSeal()
         end
     end
     if uncertain then return nil, "hay auras protegidas; no se puede confirmar el sello" end
-    return active, active and nil or "sin sello compatible activo"
+    if active then return active end
+    return nil, "sin sello compatible activo", "empty"
 end
 
 local function judgment(id)
-    local seal, reason = calc:GetActiveSeal()
-    if not seal then return nil, reason end
+    local seal, reason, state = calc:GetActiveSeal()
+    if not seal then return nil, reason, state end
     if seal == 21082 then
         local value = estimate(0, 0, "Sentencia del Cruzado: aplica un perjuicio sin daño directo",
             "El tooltip del Cruzado describe aumento de daño Sagrado recibido; no un golpe de 23.", id)
