@@ -2,7 +2,7 @@
 ## Title: Damage Reader Skill
 ## Notes: Muestra una estimación de daño o sanación sobre las habilidades de las barras de acción.
 ## Author: Damage Reader Skill
-## Version: 0.4.0
+## Version: 0.4.1
 ## SavedVariables: DamageReaderSkillDB
 ## Category: Combat
 

@@ -34,7 +34,7 @@ CreateFrame = function(kind)
     if kind == "GameTooltip" then return {SetOwner = function() end, ClearLines = function() end, Hide = function() end} end
     return frame
 end
-C_Timer = {After = function(_, fn) queued[#queued + 1] = fn end}
+C_Timer = {After = function(delay, fn) queued[#queued + 1] = {delay = delay, fn = fn} end}
 SlashCmdList = {}
 assert(loadfile("Core.lua"))("damage.reader.skill", ns)
 assert(loadfile("Calculator.lua"))("damage.reader.skill", ns)
@@ -52,7 +52,8 @@ ActionButton1 = {action = 1, DamageReaderSkillText = label,
 local function flush()
     local current = queued
     queued = {}
-    for _, fn in ipairs(current) do fn() end
+    table.sort(current, function(a, b) return a.delay < b.delay end)
+    for _, timer in ipairs(current) do timer.fn() end
 end
 local function event(name, unit)
     scripts.OnEvent(frame, name, unit)
@@ -83,7 +84,7 @@ event("UNIT_AURA", "player")
 assert(label.value == "9")
 protectedAction = true
 event("UNIT_AURA", "player")
-assert(label.value == "~9")
+assert(label.value == "9") -- public cached binding + freshly readable spell inputs
 event("ACTIONBAR_PAGE_CHANGED")
 assert(not label.visible and not ActionButton1.DamageReaderSkillResult)
 protectedAction = false
@@ -122,3 +123,44 @@ for i = 1, 50 do scripts.OnEvent(frame, "UNIT_AURA", "player") end
 assert(#queued == 1)
 flush()
 print("Combat integration passed: procs, expiry, seals, hidden data, paging, healing, exit and event coalescing")
+
+-- Regression: Crusader -> Judgment -> Rectitude while unrelated aura IDs and
+-- action IDs become secret. Delayed aura state must be re-read after the cast.
+fighting = true
+actionID, seal = 20271, 21082
+event("ACTIONBAR_SLOT_CHANGED", 1)
+assert(label.value == "0")
+C_UnitAuras.GetAuraDataByIndex = function(_, index)
+    if index == 1 then return {spellId = hidden} end
+    if index == 2 and seal then return {spellId = seal} end
+end
+protectedAction = true
+event("ACTIONBAR_SLOT_CHANGED", 2) -- unrelated slot must not erase Judgment
+assert(label.value == "0" and ActionButton1.DamageReaderSkillBinding.id == 20271)
+scripts.OnEvent(frame, "UNIT_SPELLCAST_SUCCEEDED", "player")
+flush() -- immediate refresh can still see the old seal
+assert(label.value == "0")
+seal = 21084
+flush() -- retry sees the new seal even with an unrelated protected buff
+assert(label.value == "26" and not ActionButton1.DamageReaderSkillStale)
+-- Direct lookup avoids a restricted general enumeration.
+C_UnitAuras.GetPlayerAuraBySpellID = function(id)
+    if id == seal then return {spellId = id} end
+end
+C_UnitAuras.GetAuraDataByIndex = function() error("restricted enumeration") end
+seal = 21082
+event("UNIT_AURA", "player")
+assert(label.value == "0")
+seal, protectedText = 21084, true
+event("UNIT_AURA", "player")
+assert(label.value == "~26" and ActionButton1.DamageReaderSkillStale)
+protectedText = false
+event("UNIT_AURA", "player")
+assert(label.value == "26")
+-- Hidden seal identity is never decoded or inferred from a cast.
+C_UnitAuras.GetPlayerAuraBySpellID = function() return {spellId = hidden} end
+event("UNIT_AURA", "player")
+assert(label.value == "~26")
+event("ACTIONBAR_PAGE_CHANGED")
+assert(not label.visible and not ActionButton1.DamageReaderSkillBinding)
+print("Seal-switch regression passed: unrelated secrets, delayed aura, direct lookup, cached amount, invalidation")

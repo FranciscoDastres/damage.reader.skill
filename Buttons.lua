@@ -140,7 +140,7 @@ function ButtonManager:CreateOverlay(button)
     local text = button:CreateFontString(nil, "OVERLAY")
     text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", ns.db.fontSize, "OUTLINE")
     text:ClearAllPoints()
-    text:SetPoint("CENTER", button, "CENTER", 0, -7)
+    text:SetPoint("BOTTOM", button, "BOTTOM", 0, 1)
     text:SetDrawLayer("OVERLAY", 7)
     text:SetJustifyH("RIGHT")
     text:SetShadowOffset(1, -1)
@@ -196,9 +196,15 @@ function ButtonManager:KeepLast(button)
     end
 end
 
-function ButtonManager:InvalidateActions()
+function ButtonManager:InvalidateActions(slot)
     -- Paging, replacement and removal invalidate identity even if IDs are secret.
-    for _, button in ipairs(self.buttons) do self:HideButton(button) end
+    for _, button in ipairs(self.buttons) do
+        local binding = button.DamageReaderSkillBinding
+        if not slot or not binding or binding.slot == slot then
+            button.DamageReaderSkillBinding = nil
+            self:HideButton(button)
+        end
+    end
 end
 
 function ButtonManager:UpdateButton(button)
@@ -211,6 +217,8 @@ function ButtonManager:UpdateButton(button)
 
     local slotOK, actionSlot = pcall(getActionSlot, button)
     if not slotOK then actionSlot = nil end
+    local binding = button.DamageReaderSkillBinding
+    if not actionSlot and self.inCombat and binding then actionSlot = binding.slot end
     if not actionSlot then
         if self.inCombat then self:KeepLast(button) else self:HideButton(button) end
         return
@@ -220,15 +228,27 @@ function ButtonManager:UpdateButton(button)
     end
 
     local kind, id = ns.Calculator:GetActionInfo(actionSlot)
+    local cachedIdentity = false
+    if not kind and self.inCombat and binding and binding.slot == actionSlot then
+        kind, id, cachedIdentity = "spell", binding.id, true
+    end
     if not kind then
         if self.inCombat then self:KeepLast(button) else self:HideButton(button) end
         return
     end
-    if kind ~= "spell" then self:HideButton(button); return end
+    if kind ~= "spell" then
+        button.DamageReaderSkillBinding = nil
+        self:HideButton(button)
+        return
+    end
+    button.DamageReaderSkillBinding = {slot = actionSlot, id = id}
     if button.DamageReaderSkillSpellID and button.DamageReaderSkillSpellID ~= id then
         self:HideButton(button)
     end
-    local ok, result, reason, state = pcall(ns.Calculator.EstimateAction, ns.Calculator, actionSlot)
+    -- A cached binding is public data captured earlier and invalidated on paging
+    -- or slot changes. Re-read spell stats/auras, never reconstruct secret IDs.
+    local sourceSlot = not cachedIdentity and actionSlot or nil
+    local ok, result, reason, state = pcall(ns.Calculator.EstimateSpell, ns.Calculator, id, sourceSlot)
     if not ok then result = nil end
     if not result or not result.text then
         if self.inCombat and state ~= "empty" then self:KeepLast(button) else self:HideButton(button) end
@@ -238,11 +258,11 @@ function ButtonManager:UpdateButton(button)
     text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", ns.db.fontSize, "OUTLINE")
     local color = result.kind == "heal" and ns.db.healColor or ns.db.color
     text:SetTextColor(unpack(color))
-    text:SetText(result.text)
+    text:SetText((result.stale and "~" or "") .. result.text)
     button.DamageReaderSkillResult = result
     button.DamageReaderSkillSlot = actionSlot
     button.DamageReaderSkillSpellID = id
-    button.DamageReaderSkillStale = false
+    button.DamageReaderSkillStale = result.stale or false
     text:Show()
 end
 

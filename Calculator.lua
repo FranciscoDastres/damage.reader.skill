@@ -160,6 +160,11 @@ end
 function Calculator:EstimateAction(slot)
     local kind, id = self:GetActionInfo(slot)
     if kind ~= "spell" then return nil, "no es un hechizo directo" end
+    return self:EstimateSpell(id, slot)
+end
+
+function Calculator:EstimateSpell(id, slot)
+    if not readable(id, "number") then return nil, "hechizo no legible" end
     if ns.Models and ns.Models[id] then return ns.Models[id](id, slot) end
     for _, source in ipairs(self:GetSources(id, slot)) do
         local estimate = self:Parse(source.text)

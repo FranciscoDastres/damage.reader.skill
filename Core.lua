@@ -1,7 +1,7 @@
 local ADDON_NAME, ns = ...
 
 ns.name = ADDON_NAME or "damage.reader.skill"
-ns.version = "0.4.0"
+ns.version = "0.4.1"
 
 local DEFAULTS = {
     enabled = true,
@@ -241,10 +241,24 @@ function ns:OnEvent(event, addonName)
 
     if event == "ACTIONBAR_SLOT_CHANGED" or event == "ACTIONBAR_PAGE_CHANGED"
         or event:match("^UPDATE_.*ACTIONBAR$") or event == "SPELLS_CHANGED" then
-        if self.Buttons then self.Buttons:InvalidateActions() end
+        local slot
+        if event == "ACTIONBAR_SLOT_CHANGED" and self.Calculator:IsReadable(addonName)
+            and type(addonName) == "number" and addonName > 0 then slot = addonName end
+        if self.Buttons then self.Buttons:InvalidateActions(slot) end
     end
     if event:match("^UNIT_") then
         if not self.Calculator:IsReadable(addonName) or addonName ~= "player" then return end
+    end
+    if event == "UNIT_SPELLCAST_SUCCEEDED" and C_Timer and C_Timer.After then
+        -- Aura state may land after the cast event. Never infer the seal from
+        -- a keypress or from the spellcast ID: retry the permitted aura reader.
+        self.castRefreshGeneration = (self.castRefreshGeneration or 0) + 1
+        local generation = self.castRefreshGeneration
+        for _, delay in ipairs({0.3, 0.8}) do
+            C_Timer.After(delay, function()
+                if self.castRefreshGeneration == generation then self:ScheduleRefresh("sello: actualización diferida") end
+            end)
+        end
     end
     self:ScheduleRefresh(event)
 end
@@ -273,3 +287,4 @@ eventFrame:RegisterEvent("SPELL_POWER_CHANGED")
 eventFrame:RegisterEvent("UNIT_DAMAGE")
 eventFrame:RegisterEvent("UNIT_ATTACK_POWER")
 eventFrame:RegisterEvent("UNIT_ATTACK_SPEED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")

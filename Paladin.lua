@@ -46,9 +46,14 @@ local function holyStrike(id, slot)
     return nil, "fórmula de Golpe Sagrado no reconocida"
 end
 
+local judgmentRanges = {}
 local function rectitude(id, slot, judgment)
     if not supported() then return nil, "modelo requiere Forever 16001" end
     for _, source in ipairs(calc:GetSources(id, slot)) do
+        local jlow, jhigh = source.text:match("Desatar la energía de este sello inflige (%d+) a (%d+) p%. de daño Sagrado")
+        if jlow and tonumber(jhigh) >= tonumber(jlow) then
+            judgmentRanges[id] = {low = tonumber(jlow), high = tonumber(jhigh)}
+        end
         local low, high
         if judgment then
             low, high = source.text:match("Desatar la energía de este sello inflige (%d+) a (%d+) p%. de daño Sagrado")
@@ -74,11 +79,33 @@ local function rectitude(id, slot, judgment)
             return value
         end
     end
+    if judgment and judgmentRanges[id] then
+        local previous = judgmentRanges[id]
+        local value = estimate(previous.low, previous.high, "Sentencia: último rango legible del sello actual",
+            "El sello activo se confirma ahora; la cantidad procede de una lectura anterior.", id)
+        value.stale = true
+        value.details = {"Cantidad pendiente de actualizar: no incluye cambios posteriores en el tooltip del sello."}
+        return value
+    end
     return nil, "cantidad de Rectitud no reconocida"
 end
 
 function calc:GetActiveSeal()
     if not supported() then return nil, "build no soportada" end
+    -- Query only supported seals first. Unrelated protected buffs must not veto
+    -- a seal that the client explicitly exposes with a readable spell ID.
+    local direct = C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID
+    if type(direct) == "function" then
+        local found
+        for _, id in ipairs({21084, 21082}) do
+            local ok, aura = pcall(direct, id)
+            if ok and safe(aura, "table") and safe(aura.spellId, "number") and aura.spellId == id then
+                if found then return nil, "varios sellos: estado ambiguo" end
+                found = id
+            end
+        end
+        if found then return found end
+    end
     local fn = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex
     if type(fn) ~= "function" then return nil, "API de auras no disponible" end
     local active, uncertain
@@ -87,20 +114,21 @@ function calc:GetActiveSeal()
         if not ok then return nil, "lectura de auras no disponible" end
         if not calc:IsReadable(aura) then
             if type(issecretvalue) == "function" and issecretvalue(aura) then
-                return nil, "auras protegidas"
+                uncertain = true
+            else
+                break
             end
-            break
-        end
-        if type(aura) ~= "table" then return nil, "formato de aura no disponible" end
-        if not safe(aura.spellId, "number") then
+        elseif type(aura) ~= "table" then
+            return nil, "formato de aura no disponible"
+        elseif not safe(aura.spellId, "number") then
             uncertain = true
         elseif aura.spellId == 21084 or aura.spellId == 21082 then
             if active and active ~= aura.spellId then return nil, "varios sellos: estado ambiguo" end
             active = aura.spellId
         end
     end
-    if uncertain then return nil, "hay auras protegidas; no se puede confirmar el sello" end
     if active then return active end
+    if uncertain then return nil, "hay auras protegidas; no se puede confirmar el sello" end
     return nil, "sin sello compatible activo", "empty"
 end
 

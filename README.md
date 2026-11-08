@@ -2,7 +2,13 @@
 
 Addon independiente en desarrollo para mostrar daño (amarillo) y sanación (verde) sobre las barras de Blizzard. No incluye código ni tablas de DrDamage.
 
-## Estado 0.4.0
+## Estado 0.4.1
+
+Corrige el cambio Cruzado → Rectitud durante combate: consulta directamente los sellos cuando la API lo permite; un buff ajeno protegido ya no invalida un sello legible. Tras un lanzamiento exitoso repite la lectura a 0.3 y 0.8 segundos para recoger auras que llegan con retraso. No infiere qué sello está activo a partir de la tecla o del lanzamiento.
+
+La identidad pública de cada botón se conserva hasta un cambio de su casilla o página. Cambiar otra casilla no borra Sentencia. Si se confirma Rectitud pero su tooltip no es legible, muestra su último rango conocido con `~` (por ejemplo `~26`), en lugar de conservar el cero del Cruzado. El daño se dibuja en el borde inferior para distinguirlo del contador central de reutilización.
+
+Esto actualiza el efecto del sello propio. El aumento de daño recibido por el perjuicio de Cruzado en el enemigo todavía no está modelado: no se suman sus 23 puntos directamente a Sentencia sin un coeficiente validado.
 
 Los números permanecen visibles al entrar en combate. Los eventos de auras, daño de arma, poder de ataque y poder de hechizos solicitan recálculo (agrupado a 0.1 segundos). Los modelos actualizan los valores cuando todas sus entradas son legibles; esto permite reflejar los procs que modifican esas entradas. No implica soporte de cualquier proc: efectos extra o coeficientes no modelados siguen pendientes.
 
