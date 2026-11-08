@@ -1,36 +1,38 @@
-# Damage Reader Skill
+# Damage Reader Skill — Forever
 
-Addon nuevo e independiente para **WoW: Forever**. El proyecto no modifica ni incluye DrDamage.
+Addon independiente en desarrollo para mostrar daño (amarillo) y sanación (verde) sobre las barras de Blizzard. No incluye código ni tablas de DrDamage.
 
-Su primera versión coloca un número pequeño sobre las habilidades de las barras de acción de Blizzard cuando la API del cliente expone una descripción numérica de daño o sanación para el hechizo.
+## Estado 0.2.0
+
+La interfaz funciona según las capturas del usuario. El motor completo de predicción por hechizo, estadísticas, talentos y sellos **todavía no está terminado**.
+
+Esta versión corrige la lectura de cantidades directas del tooltip. Conserva las líneas, reconoce rangos en español e inglés y muestra el promedio del rango indicado por el cliente. Un rango 88–106 muestra 97; eso no garantiza que cada lanzamiento sea de 97.
+
+Elimina la conversión no verificada de porcentajes a vida máxima. Porcentajes, daño de arma, sellos, daño periódico y descripciones con varios efectos requieren modelos específicos; sin modelo no se muestra un número. No se suma poder de hechizos indiscriminadamente: el tooltip puede incluirlo ya.
+
+Se prueban casos sintéticos con Lua 5.1; no son datos verificados de hechizos de Forever. Falta validar con las descripciones reales del cliente. El manifiesto conserva Interface 16001; el informe muestra la build real sin asumir sus APIs.
 
 ## Instalación
 
-1. Copia esta carpeta completa como `damage.reader.skill` dentro de la carpeta `Interface/AddOns` del cliente de WoW Forever.
-2. Comprueba en la pantalla de selección de personaje que **Damage Reader Skill** aparezca habilitado.
-3. Entra al juego y escribe `/drs`.
-
-La ruta exacta del producto puede variar entre versiones del launcher de Forever. Usa la carpeta `Interface/AddOns` perteneciente al cliente que realmente ejecutas; no mezcles la ruta de Retail, Classic o PTR.
+Copia la carpeta como `Interface/AddOns/damage.reader.skill` en la instalación de Forever que ejecutas. El archivo `damage.reader.skill.toc` debe quedar directamente dentro. Al actualizar, reemplaza los archivos y usa `/reload`.
 
 ## Comandos
 
-- `/drs` o `/drs status`: muestra ayuda y estado.
-- `/drs on`: activa los números.
-- `/drs off`: los desactiva.
-- `/drs refresh`: fuerza la actualización de las barras.
-- `/drs scan`: muestra qué acciones y hechizos puede leer el cliente.
-- `/drs reset`: restablece la configuración.
-- `/drs debug`: activa mensajes de diagnóstico.
+- `/drs status`: versión, build y disponibilidad de API.
+- `/drs on`, `/drs off`: mostrar u ocultar.
+- `/drs refresh`: actualizar.
+- `/drs scan`: acciones detectadas.
+- `/drs inspect N`: texto exacto de la casilla N y resultado.
+- `/drs report`: ventana copiable con build, idioma, estadísticas propias y descripciones de las habilidades colocadas.
+- `/drs reset`: restablecer preferencias.
+- `/drs debug`: mensajes de actualización.
 
-## Alcance de esta versión
+El informe evita nombres de jugador, cuenta y servidor. Permite comprobar qué cifras son costes, cantidades, duraciones o fórmulas antes de implementar modelos por habilidad.
 
-- Usa la API de acciones expuesta por Forever: primero intenta `C_ActionBar` y, cuando el cliente no ofrece ese namespace, utiliza el `GetActionInfo` global disponible en algunas builds. También usa `C_Spell` y `C_TooltipInfo` cuando están disponibles.
-- No usa el combat log, lectura de eventos de daño, automatización de acciones, macros, código ejecutable externo ni decisiones protegidas durante combate.
-- Oculta el overlay durante combate si la información de acción puede ser un valor secreto.
-- No contiene tablas, código ni archivos tomados de DrDamage.
+## Restricciones y validación
 
-El número mostrado es una **estimación basada en la descripción del hechizo**. No debe presentarse todavía como una predicción completa de daño real: faltan pruebas en el cliente, datos por clase, talentos, equipo, buffs, resistencias y reglas específicas de Forever. Esa ampliación se hará con datos propios verificados, no copiando una base de datos de terceros.
+Se inspeccionan valores legibles fuera de combate. El overlay se oculta durante combate; aún no hay soporte validado de predicción en combate. No se registra el combat log ni se interpreta un total de combate como daño por golpe. No se implementó C_DamageMeter: sus totales no bastan por sí solos para esa predicción.
 
-## Estado de verificación
+Pruebas: `lua5.1 tests/calculator.lua`. No sustituyen las pruebas en el juego.
 
-La estructura y el código están preparados para el cliente moderno, pero este entorno no tiene una instalación ejecutable de WoW Forever para validar la creación de cada botón y las respuestas exactas de su build. La validación final debe hacerse dentro del cliente con `/drs debug` y una captura de las barras.
+Referencia funcional: [DrDamage](https://www.curseforge.com/wow/addons/dr-damage) calcula usando equipo, talentos y buffs. Leer un tooltip es solamente una de las entradas necesarias para conseguir ese alcance.

@@ -1,7 +1,7 @@
 local ADDON_NAME, ns = ...
 
 ns.name = ADDON_NAME or "damage.reader.skill"
-ns.version = "0.1.0"
+ns.version = "0.2.0"
 
 local DEFAULTS = {
     enabled = true,
@@ -38,6 +38,7 @@ function ns:InitializeDatabase()
 end
 
 function ns:Refresh(reason)
+    if not self.db then return end
     if self.db and self.db.debug and reason then
         self:Print("actualización: " .. reason)
     end
@@ -59,7 +60,7 @@ function ns:ScheduleRefresh(reason)
     end
     self.refreshPending = true
 
-    C_Timer.After(0, function()
+    C_Timer.After(0.1, function()
         self.refreshPending = false
         self:Refresh(reason)
     end)
@@ -71,7 +72,11 @@ function ns:HandleCommand(rawMessage)
     message = string.lower(message)
 
     if message == "" or message == "status" then
-        self:Print("/drs on | off | refresh | reset | debug")
+        self:Print("v" .. self.version .. " /drs on | off | refresh | scan | inspect N | report")
+        if type(GetBuildInfo) == "function" then
+            local version, build, _, interface = GetBuildInfo()
+            self:Print("Cliente: " .. tostring(version) .. " build " .. tostring(build) .. " interfaz " .. tostring(interface))
+        end
         self:Print("estado: " .. (self.db and self.db.enabled and "activado" or "desactivado"))
         if self.Buttons then
             self.Buttons:Discover()
@@ -113,6 +118,17 @@ function ns:HandleCommand(rawMessage)
         return
     end
 
+    local slot = tonumber(message:match("^inspect%s+(%d+)$"))
+    if slot and slot >= 1 and slot <= 180 then
+        self.Calculator:Report(slot)
+        return
+    end
+
+    if message == "report" then
+        self:ShowReport()
+        return
+    end
+
     if message == "reset" then
         DamageReaderSkillDB = {}
         self:InitializeDatabase()
@@ -128,6 +144,51 @@ function ns:HandleCommand(rawMessage)
     end
 
     self:Print("comando desconocido. Usa /drs para ver la ayuda.")
+end
+
+function ns:ShowReport()
+    if type(InCombatLockdown) == "function" and InCombatLockdown() then
+        self:Print("Sal del combate para generar el informe.")
+        return
+    end
+    if not self.reportPanel then
+        local panel = CreateFrame("Frame", nil, UIParent)
+        panel:SetSize(620, 400)
+        panel:SetPoint("CENTER")
+        panel:SetFrameStrata("DIALOG")
+        panel:EnableMouse(true)
+        local background = panel:CreateTexture(nil, "BACKGROUND")
+        background:SetAllPoints()
+        if background.SetColorTexture then
+            background:SetColorTexture(0, 0, 0, 0.95)
+        else
+            background:SetTexture(0, 0, 0, 0.95)
+        end
+        local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        title:SetPoint("TOP", 0, -12)
+        title:SetText("Informe: Ctrl+A, Ctrl+C para copiar. Esc para cerrar.")
+        local close = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
+        close:SetPoint("TOPRIGHT")
+        close:SetScript("OnClick", function() panel:Hide() end)
+        local scroll = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
+        scroll:SetPoint("TOPLEFT", 16, -40)
+        scroll:SetPoint("BOTTOMRIGHT", -32, 16)
+        local edit = CreateFrame("EditBox", nil, scroll)
+        edit:SetMultiLine(true)
+        edit:SetFontObject(ChatFontNormal)
+        edit:SetWidth(560)
+        edit:SetHeight(320)
+        edit:SetAutoFocus(false)
+        edit:SetMaxLetters(0)
+        edit:SetScript("OnEscapePressed", function() panel:Hide() end)
+        scroll:SetScrollChild(edit)
+        panel.edit = edit
+        self.reportPanel = panel
+    end
+    self.reportPanel:Show()
+    self.reportPanel.edit:SetText(self.Calculator:BuildReport())
+    self.reportPanel.edit:SetFocus()
+    self.reportPanel.edit:HighlightText()
 end
 
 SLASH_DAMAGEREADERSKILL1 = "/drs"
@@ -148,6 +209,9 @@ function ns:OnEvent(event, addonName)
 
     if event == "PLAYER_LOGIN" then
         self:InitializeDatabase()
+        if self.Buttons and type(InCombatLockdown) == "function" then
+            self.Buttons:SetInCombat(InCombatLockdown())
+        end
         self:ScheduleRefresh("inicio")
         if C_Timer and C_Timer.After then
             C_Timer.After(0.5, function() self:ScheduleRefresh("inicio diferido") end)
@@ -171,6 +235,7 @@ function ns:OnEvent(event, addonName)
         return
     end
 
+    if (event == "UNIT_AURA" or event == "UNIT_STATS") and addonName ~= "player" then return end
     self:ScheduleRefresh(event)
 end
 
@@ -192,3 +257,6 @@ eventFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
 eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+eventFrame:RegisterEvent("UNIT_AURA")
+eventFrame:RegisterEvent("UNIT_STATS")
+eventFrame:RegisterEvent("SPELL_POWER_CHANGED")

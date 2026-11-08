@@ -18,16 +18,13 @@ local BUTTON_PREFIXES = {
 }
 
 local function isSafe(value)
-    if value == nil then
-        return false
-    end
     if type(issecretvalue) == "function" then
         local ok, secret = pcall(issecretvalue, value)
         if ok and secret then
             return false
         end
     end
-    return true
+    return value ~= nil
 end
 
 local function addButton(collection, button)
@@ -56,6 +53,8 @@ local function getActionSlot(button)
         return isSafe(slot) and type(slot) == "number" and slot > 0
     end
 
+    if validSlot(button.action) then return button.action end
+    if validSlot(button.actionID) then return button.actionID end
     if type(ActionButton_GetPagedID) == "function" then
         local ok, slot = pcall(ActionButton_GetPagedID, button)
         if ok and validSlot(slot) then
@@ -70,18 +69,15 @@ local function getActionSlot(button)
         end
     end
 
-    local candidates = { button.actionID, button.action }
-    for _, slot in ipairs(candidates) do
-        if validSlot(slot) then
-            return slot
-        end
-    end
-
     local buttonName = button.GetName and button:GetName() or ""
     local index = tonumber(string.match(buttonName, "(%d+)$"))
     if index then
         if string.match(buttonName, "^ActionButton") then
-            return index
+            if type(GetActionBarPage) == "function" then
+                local page = GetActionBarPage()
+                if validSlot(page) then return (page - 1) * 12 + index end
+            end
+            return nil
         elseif string.match(buttonName, "^MultiBarBottomLeftButton") then
             return 60 + index
         elseif string.match(buttonName, "^MultiBarBottomRightButton") then
@@ -170,12 +166,11 @@ function ButtonManager:HideButton(button)
 end
 
 function ButtonManager:UpdateButton(button)
-    local text = self:CreateOverlay(button)
-
     if not ns.db or not ns.db.enabled or self.inCombat then
-        text:Hide()
+        self:HideButton(button)
         return
     end
+    local text = self:CreateOverlay(button)
 
     local actionSlot = getActionSlot(button)
     if not actionSlot then
