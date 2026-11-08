@@ -145,6 +145,19 @@ function ButtonManager:CreateOverlay(button)
     button.DamageReaderSkillText = text
 
     if not button.DamageReaderSkillHooked then
+        button:HookScript("OnEnter", function(currentButton)
+            local value = currentButton.DamageReaderSkillResult
+            if not value or ButtonManager.inCombat or not GameTooltip then return end
+            GameTooltip:AddLine("Damage Reader Skill", 1, .82, .05)
+            GameTooltip:AddLine(value.metric or "Promedio del tooltip del cliente", 1, 1, 1, true)
+            if value.min and value.max then
+                GameTooltip:AddLine(string.format("Rango: %.2f–%.2f", value.min, value.max), 1, 1, 1)
+            end
+            for _, detail in ipairs(value.details or {}) do
+                GameTooltip:AddLine(detail, .8, .8, .8, true)
+            end
+            GameTooltip:Show()
+        end)
         button:HookScript("OnShow", function(currentButton)
             ButtonManager:UpdateButton(currentButton)
         end)
@@ -160,6 +173,7 @@ function ButtonManager:CreateOverlay(button)
 end
 
 function ButtonManager:HideButton(button)
+    button.DamageReaderSkillResult = nil
     if button.DamageReaderSkillText then
         button.DamageReaderSkillText:Hide()
     end
@@ -174,13 +188,13 @@ function ButtonManager:UpdateButton(button)
 
     local actionSlot = getActionSlot(button)
     if not actionSlot then
-        text:Hide()
+        self:HideButton(button)
         return
     end
 
     local result = ns.Calculator:EstimateAction(actionSlot)
     if not result or not result.text then
-        text:Hide()
+        self:HideButton(button)
         return
     end
 
@@ -188,6 +202,7 @@ function ButtonManager:UpdateButton(button)
     local color = result.kind == "heal" and ns.db.healColor or ns.db.color
     text:SetTextColor(unpack(color))
     text:SetText(result.text)
+    button.DamageReaderSkillResult = result
     text:Show()
 end
 

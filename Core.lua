@@ -1,7 +1,7 @@
 local ADDON_NAME, ns = ...
 
 ns.name = ADDON_NAME or "damage.reader.skill"
-ns.version = "0.2.0"
+ns.version = "0.3.0"
 
 local DEFAULTS = {
     enabled = true,
@@ -235,7 +235,7 @@ function ns:OnEvent(event, addonName)
         return
     end
 
-    if (event == "UNIT_AURA" or event == "UNIT_STATS") and addonName ~= "player" then return end
+    if event:match("^UNIT_") and addonName ~= "player" then return end
     self:ScheduleRefresh(event)
 end
 
@@ -260,3 +260,6 @@ eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventFrame:RegisterEvent("UNIT_AURA")
 eventFrame:RegisterEvent("UNIT_STATS")
 eventFrame:RegisterEvent("SPELL_POWER_CHANGED")
+eventFrame:RegisterEvent("UNIT_DAMAGE")
+eventFrame:RegisterEvent("UNIT_ATTACK_POWER")
+eventFrame:RegisterEvent("UNIT_ATTACK_SPEED")

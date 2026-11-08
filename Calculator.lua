@@ -75,7 +75,7 @@ function Calculator:Parse(description)
                     if line:find("sana") or line:find("cura") or line:find("restaura")
                         or line:find("heal") or line:find("restor") then kind = "heal" end
                 end
-                if not kind and suffix:match("^[%.%s]*$") then
+                if not kind and (suffix:match("^[%.%s]*$") or suffix:match("^p%.[%s%.]*$")) then
                     if prefix:match("^sana ") or prefix:match("^cura ") or prefix:match("^heals ") then kind = "heal" end
                 end
                 if low and kind and not prefix:match("%-%s*$") then
@@ -155,6 +155,7 @@ end
 function Calculator:EstimateAction(slot)
     local kind, id = self:GetActionInfo(slot)
     if kind ~= "spell" then return nil, "no es un hechizo directo" end
+    if ns.Models and ns.Models[id] then return ns.Models[id](id, slot) end
     for _, source in ipairs(self:GetSources(id, slot)) do
         local estimate = self:Parse(source.text)
         if estimate then
@@ -168,6 +169,8 @@ function Calculator:Report(slot)
     if combat() then ns:Print("Diagnóstico disponible fuera de combate."); return end
     local kind, id = self:GetActionInfo(slot)
     ns:Print("Casilla " .. slot .. ": " .. tostring(kind) .. " / " .. tostring(id))
+    local calculated, reason = self:EstimateAction(slot)
+    ns:Print(calculated and ("Modelo: " .. calculated.text .. " — " .. calculated.metric) or reason)
     for _, source in ipairs(self:GetSources(id, slot)) do
         ns:Print(source.name)
         for line in source.text:gmatch("[^\n]+") do ns:Print(line) end
@@ -185,6 +188,10 @@ function Calculator:BuildReport()
         add("Cliente: " .. tostring(version) .. " / " .. tostring(build) .. " / " .. tostring(interface))
     end
     add("Idioma: " .. (type(GetLocale) == "function" and GetLocale() or "?"))
+    if self.GetActiveSeal then
+        local seal, reason = self:GetActiveSeal()
+        add("Sello activo: " .. tostring(seal) .. " / " .. tostring(reason or "legible"))
+    end
     local function stat(name, fn, arg)
         if type(fn) ~= "function" then return end
         local values = {pcall(fn, arg)}
@@ -205,6 +212,9 @@ function Calculator:BuildReport()
         if kind == "spell" and not seen[id] then
             seen[id] = true
             add("\nCasilla " .. slot .. " / hechizo " .. id)
+            local calculated, reason = self:EstimateAction(slot)
+            add(calculated and ("Modelo: " .. calculated.text .. " — " .. calculated.metric) or reason)
+            if calculated and calculated.evidence then add(calculated.evidence) end
             for _, source in ipairs(self:GetSources(id, slot)) do
                 add(source.name .. "\n" .. source.text)
                 local estimate, reason = self:Parse(source.text)
