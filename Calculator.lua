@@ -6,21 +6,26 @@ ns.Calculator = Calculator
 local DAMAGE_WORDS = {
     "damage",
     "damages",
-    "heal",
-    "healing",
-    "restores",
     "strike",
     "strikes",
     "hits",
     "deals",
     "daño",
     "daños",
+    "golpea",
+    "inflige",
+}
+
+local HEAL_WORDS = {
+    "heal",
+    "healing",
+    "restores",
     "cura",
     "curación",
     "sana",
     "restaura",
-    "golpea",
-    "inflige",
+    "curar",
+    "sanación",
 }
 
 local IGNORE_WORDS = {
@@ -93,6 +98,11 @@ local function hasDamageWord(description)
             return true
         end
     end
+    for _, word in ipairs(HEAL_WORDS) do
+        if string.find(lower, word, 1, true) then
+            return true
+        end
+    end
     return false
 end
 
@@ -125,6 +135,15 @@ local function nearestWordDistance(description, startAt, endAt, words)
     end
 
     return nearest
+end
+
+local function getValueKind(description, startAt, endAt)
+    local damageDistance = nearestWordDistance(description, startAt, endAt, DAMAGE_WORDS)
+    local healDistance = nearestWordDistance(description, startAt, endAt, HEAL_WORDS)
+    if healDistance and (not damageDistance or healDistance < damageDistance) then
+        return healDistance, "heal"
+    end
+    return damageDistance, "damage"
 end
 
 local function isPercentOrDuration(description, startAt, endAt)
@@ -166,13 +185,14 @@ local function extractValue(description)
 
     local bestValue
     local bestDistance
+    local bestKind
 
     for rangeStart, first, second in string.gmatch(
         description,
         "()(%d[%d,]*)%s*[%-%–—]%s*(%d[%d,]*)"
     ) do
         local rangeEnd = rangeStart + string.len(first) + string.len(second)
-        local distance = nearestWordDistance(description, rangeStart, rangeEnd, DAMAGE_WORDS)
+        local distance, kind = getValueKind(description, rangeStart, rangeEnd)
         if distance and distance <= 80
             and not isIgnoredNumber(description, rangeStart, rangeStart + string.len(first) - 1) then
             local minimum = parseNumber(first)
@@ -180,23 +200,25 @@ local function extractValue(description)
             if minimum and maximum and (not bestDistance or distance < bestDistance) then
                 bestValue = (minimum + maximum) / 2
                 bestDistance = distance
+                bestKind = kind
             end
         end
     end
 
     for startAt, token in string.gmatch(description, "()(%d[%d,]*%.?%d*)") do
         local endAt = startAt + string.len(token) - 1
-        local distance = nearestWordDistance(description, startAt, endAt, DAMAGE_WORDS)
+        local distance, kind = getValueKind(description, startAt, endAt)
         if distance and distance <= 80 and not isIgnoredNumber(description, startAt, endAt) then
             local number = parseNumber(token)
             if number and number >= 2 and (not bestDistance or distance < bestDistance) then
                 bestValue = number
                 bestDistance = distance
+                bestKind = kind
             end
         end
     end
 
-    return bestValue
+    return bestValue, bestKind
 end
 
 local function formatValue(value)
@@ -440,10 +462,10 @@ function Calculator:EstimateAction(actionSlot)
         return nil
     end
     local description = self:GetSpellDescription(actionID, actionSlot)
-    local value = extractValue(description)
+    local value, kind = extractValue(description)
     if not value then
         return nil
     end
 
-    return { value = value, text = formatValue(value), source = "action-tooltip" }
+    return { value = value, text = formatValue(value), kind = kind, source = "action-tooltip" }
 end

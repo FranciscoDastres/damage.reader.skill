@@ -7,6 +7,7 @@ local DEFAULTS = {
     enabled = true,
     fontSize = 11,
     color = { 1.0, 0.82, 0.05 },
+    healColor = { 0.20, 1.0, 0.20 },
     debug = false,
 }
 

@@ -190,7 +190,8 @@ function ButtonManager:UpdateButton(button)
     end
 
     text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", ns.db.fontSize, "OUTLINE")
-    text:SetTextColor(unpack(ns.db.color))
+    local color = result.kind == "heal" and ns.db.healColor or ns.db.color
+    text:SetTextColor(unpack(color))
     text:SetText(result.text)
     text:Show()
 end
