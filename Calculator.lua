@@ -178,9 +178,38 @@ local function isIgnoredNumber(description, startAt, endAt)
     return false
 end
 
+local function extractHealthPercentage(description)
+    for startAt, token in string.gmatch(description, "()(%d+%.?%d*)%s*%%") do
+        local endAt = startAt + string.len(token) - 1
+        local distance, kind = getValueKind(description, startAt, endAt)
+        local context = string.lower(string.sub(description, math.max(1, startAt - 40), endAt + 40))
+        local describesHealth = string.find(context, "health", 1, true)
+            or string.find(context, "salud", 1, true)
+            or string.find(context, "vida", 1, true)
+
+        if distance and distance <= 80 and kind == "heal" and describesHealth
+            and type(UnitHealthMax) == "function" then
+            local ok, maximumHealth = pcall(UnitHealthMax, "player")
+            if ok and isSafe(maximumHealth) and type(maximumHealth) == "number" then
+                local percentage = tonumber(token)
+                if percentage then
+                    return maximumHealth * percentage / 100, "heal"
+                end
+            end
+        end
+    end
+
+    return nil
+end
+
 local function extractValue(description)
     if not description or not hasDamageWord(description) then
         return nil
+    end
+
+    local percentageValue, percentageKind = extractHealthPercentage(description)
+    if percentageValue then
+        return percentageValue, percentageKind
     end
 
     local bestValue
