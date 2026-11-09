@@ -34,6 +34,31 @@ local function quantity(text)
     if high < low then return end
     return low, high
 end
+
+function Calculator:ReadQuantity(text)
+    return quantity(text)
+end
+
+function Calculator:Normalize(text)
+    return string.lower(text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+        :gsub("|T.-|t", ""):gsub("Á", "á"):gsub("É", "é"):gsub("Í", "í")
+        :gsub("Ó", "ó"):gsub("Ú", "ú"):gsub("–", "-"):gsub("—", "-")
+        :gsub(" ", " "))
+end
+
+function Calculator:GetSpellName(id)
+    local fn = C_Spell and C_Spell.GetSpellName
+    if type(fn) == "function" then
+        local ok, name = pcall(fn, id)
+        if ok and readable(name, "string") then return name end
+    end
+    fn = C_Spell and C_Spell.GetSpellInfo or GetSpellInfo
+    if type(fn) == "function" then
+        local ok, info = pcall(fn, id)
+        if ok and readable(info, "string") then return info end
+        if ok and readable(info, "table") and readable(info.name, "string") then return info.name end
+    end
+end
 local function result(low, high, kind, evidence)
     local value = (low + high) / 2
     return {value = value, min = low, max = high, kind = kind,
@@ -166,6 +191,10 @@ end
 function Calculator:EstimateSpell(id, slot)
     if not readable(id, "number") then return nil, "hechizo no legible" end
     if ns.Models and ns.Models[id] then return ns.Models[id](id, slot) end
+    if self.EstimatePaladin then
+        local value, reason, state, handled = self:EstimatePaladin(id, slot)
+        if handled then return value, reason, state end
+    end
     for _, source in ipairs(self:GetSources(id, slot)) do
         local estimate = self:Parse(source.text)
         if estimate then
@@ -191,6 +220,7 @@ end
 
 function Calculator:BuildReport()
     if combat() then return "Sal del combate para generar el informe." end
+    if self.RefreshSpellbook then self:RefreshSpellbook() end
     local lines = {"Damage Reader Skill " .. ns.version}
     local function add(text) lines[#lines + 1] = text end
     if type(GetBuildInfo) == "function" then
@@ -230,6 +260,16 @@ function Calculator:BuildReport()
                 local estimate, reason = self:Parse(source.text)
                 add(estimate and ("Resultado: " .. estimate.text .. " " .. estimate.kind .. "; " .. estimate.evidence) or reason)
             end
+        end
+    end
+    add("\nLibro de hechizos: habilidades y rangos fuera de las barras")
+    for _, spell in ipairs(self.knownSpells or {}) do
+        if not seen[spell.id] then
+            add("\nHechizo " .. spell.id .. " / " .. (spell.name or "nombre no disponible")
+                .. " / familia " .. (spell.family or "sin modelo específico"))
+            local value, reason = self:EstimateSpell(spell.id)
+            add(value and ("Modelo: " .. value.text .. " — " .. value.metric) or reason)
+            for _, source in ipairs(self:GetSources(spell.id)) do add(source.name .. "\n" .. source.text) end
         end
     end
     return table.concat(lines, "\n")

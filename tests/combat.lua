@@ -37,8 +37,10 @@ end
 C_Timer = {After = function(delay, fn) queued[#queued + 1] = {delay = delay, fn = fn} end}
 SlashCmdList = {}
 assert(loadfile("Core.lua"))("damage.reader.skill", ns)
+assert(loadfile("Data.lua"))("damage.reader.skill", ns)
 assert(loadfile("Calculator.lua"))("damage.reader.skill", ns)
 assert(loadfile("Paladin.lua"))("damage.reader.skill", ns)
+assert(loadfile("Spellbook.lua"))("damage.reader.skill", ns)
 assert(loadfile("Buttons.lua"))("damage.reader.skill", ns)
 ns:InitializeDatabase()
 local label = {}
@@ -164,3 +166,52 @@ assert(label.value == "~26")
 event("ACTIONBAR_PAGE_CHANGED")
 assert(not label.visible and not ActionButton1.DamageReaderSkillBinding)
 print("Seal-switch regression passed: unrelated secrets, delayed aura, direct lookup, cached amount, invalidation")
+
+-- Learning a rank refreshes the registry. Combat transitions must not keep
+-- Judgment from a different seal/rank when the new quantity is unavailable.
+fighting, protectedAction, protectedText = false, false, false
+C_Spell.GetSpellName = function(id)
+    if id == 20287 or id == 900002 then return "Sello de rectitud" end
+    if id == 900003 then return "Sello de furia" end
+    if id == 900004 then return "Sello de sabiduría" end
+end
+C_UnitAuras.GetPlayerAuraBySpellID = function(id)
+    if id == seal then return {spellId = id} end
+end
+C_UnitAuras.GetAuraDataByIndex = function(_, index)
+    if index == 1 and seal then return {spellId = seal} end
+end
+Enum = {SpellBookSpellBank = {Player = 0}}
+C_SpellBook = {
+    GetNumSpellBookSkillLines = function() assert(not fighting); return 1 end,
+    GetSpellBookSkillLineInfo = function() return {itemIndexOffset = 0, numSpellBookItems = 3} end,
+    GetSpellBookItemInfo = function(slot) return {spellID = ({20287, 900002, 900003})[slot]} end,
+}
+descriptions[20287] = "Otorga a cada ataque cuerpo a cuerpo entre 4 y 13 p. más de daño Sagrado. Desatar la energía de este sello inflige 40 a 44 p. de daño Sagrado."
+descriptions[900003] = "Cada ataque inflige 8 p. de daño Sagrado. Desatar la energía de este sello inflige 31 a 35 p. de daño Sagrado."
+descriptions[900004] = "Cada ataque restaura 40 p. de maná. Desatar la energía de este sello restaura 20 p. de maná."
+actionID, seal = 20271, 20287
+event("SPELLS_CHANGED")
+assert(label.value == "42" and label.visible)
+fighting = true
+event("PLAYER_REGEN_DISABLED")
+seal = 900003
+event("UNIT_AURA", "player")
+assert(label.value == "33")
+seal = 900002 -- confirmed active rank, but its amounts have never been read
+event("UNIT_AURA", "player")
+assert(not label.visible, "different rank inherited the previous Judgment")
+seal = 20287
+event("UNIT_AURA", "player")
+assert(label.value == "42" and label.visible)
+-- Replacing a seal button with its new rank also discards old values.
+actionID = 20287
+event("ACTIONBAR_SLOT_CHANGED", 1)
+assert(label.value == "4–13")
+actionID = 900002
+event("ACTIONBAR_SLOT_CHANGED", 1)
+assert(not label.visible)
+actionID = 900004
+event("ACTIONBAR_SLOT_CHANGED", 1)
+assert(label.value == "40" and label.color[3] == 1 and label.color[2] == .65)
+print("Rank upgrade integration passed: learned ranks, Judgment isolation, button replacement and mana color")

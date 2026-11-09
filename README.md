@@ -1,62 +1,82 @@
 # Damage Reader Skill — Forever
 
-Addon independiente en desarrollo para mostrar daño (amarillo) y sanación (verde) sobre las barras de Blizzard. No incluye código ni tablas de DrDamage.
+Addon independiente para mostrar estimaciones sobre las barras de Blizzard. Destino: WoW Forever, Interface 16001. No incluye código ni tablas de DrDamage.
 
-## Estado 0.4.1
+## Versión 0.5.0: familias y rangos del paladín
 
-Corrige el cambio Cruzado → Rectitud durante combate: consulta directamente los sellos cuando la API lo permite; un buff ajeno protegido ya no invalida un sello legible. Tras un lanzamiento exitoso repite la lectura a 0.3 y 0.8 segundos para recoger auras que llegan con retraso. No infiere qué sello está activo a partir de la tecla o del lanzamiento.
+Las habilidades se reconocen por su nombre de familia en español o inglés, en lugar de depender del ID de un solo rango. Al aprender un rango se actualiza el registro desde el libro de hechizos y las barras. Esto incluye Rectitud de rango 2 y posteriores, Furia y los rangos de las demás familias de la tabla. Las cantidades se leen del rango exacto que expone el cliente: no hay una tabla de daño fija ni se reutilizan los números de rango 1.
 
-La identidad pública de cada botón se conserva hasta un cambio de su casilla o página. Cambiar otra casilla no borra Sentencia. Si se confirma Rectitud pero su tooltip no es legible, muestra su último rango conocido con `~` (por ejemplo `~26`), en lugar de conservar el cero del Cruzado. El daño se dibuja en el borde inferior para distinguirlo del contador central de reutilización.
+El libro se consulta fuera de combate con APIs modernas o clásicas, según disponibilidad. Si una habilidad nueva o su traducción no se reconoce, `/drs report` incluye su ID y descripción aunque no esté en las barras. No se promete cobertura numérica de cualquier descripción futura: una fórmula ambigua queda sin número y con el motivo en el informe.
 
-Esto actualiza el efecto del sello propio. El aumento de daño recibido por el perjuicio de Cruzado en el enemigo todavía no está modelado: no se suman sus 23 puntos directamente a Sentencia sin un coeficiente validado.
-
-Los números permanecen visibles al entrar en combate. Los eventos de auras, daño de arma, poder de ataque y poder de hechizos solicitan recálculo (agrupado a 0.1 segundos). Los modelos actualizan los valores cuando todas sus entradas son legibles; esto permite reflejar los procs que modifican esas entradas. No implica soporte de cualquier proc: efectos extra o coeficientes no modelados siguen pendientes.
-
-Un prefijo `~` indica que se conserva la última estimación porque no pudo actualizarse. Se retira cuando el cálculo vuelve a estar disponible. Si cambia la página, casilla o habilidad, se descarta la caché para no adjudicar el daño anterior a otro botón. Un sello confirmado como ausente también elimina la estimación de Sentencia. No se reconstruyen valores secretos.
-
-Las etiquetas se crean fuera de combate. Si instalas o recargas el addon ya en combate, los botones sin etiqueta esperan hasta salir. El scanner oculto y los informes siguen limitados a fuera de combate; durante la pelea se consultan las APIs de descripciones y auras con controles de legibilidad.
-
-La interfaz funciona según las capturas del usuario. Incluye modelos para las habilidades del informe del paladín en Forever 1.60.1, build 70862, Interface 16001, idioma esMX. Se validan con pruebas Lua; falta confirmar su ejecución en esa build dentro del juego. No hay cobertura completa de clases, rangos ni talentos.
-
-| Habilidad | Cálculo y presentación |
+| Familia, en todos los rangos reconocidos | Qué muestra |
 | --- | --- |
-| Golpe Sagrado (679) | Porcentaje del tooltip × daño actual de mano principal + rango Sagrado del tooltip. Con el informe: 7.44–10.19, promedio redondeado 9. |
-| Luz Sagrada (639) | Reconoce “Sana un objetivo amistoso en 78 a 93 p.”: promedio 85.5, muestra 86 en verde. |
-| Sello de rectitud (21084) | Muestra el rango adicional por ataque 2–9, que depende de la velocidad del arma. No muestra aquí el daño de Sentencia. |
-| Sentencia (20271) | Lee el sello activo si es legible. Rectitud: 24–27, muestra 26. Cruzado: 0 daño directo, aplica perjuicio. Sin sello compatible confirmado: oculta el número. Si la lectura está protegida en combate: conserva la última estimación con `~`. |
-| Sello del cruzado (21082), bendiciones y utilidades | No muestra AP, duración, maná ni perjuicios como si fueran daño. |
+| Golpe Sagrado | Porcentaje del tooltip × daño actual del arma + daño Sagrado indicado. UnitDamage ya incluye AP. |
+| Sello de rectitud | Rango adicional por golpe, sin inventar un promedio para su dependencia de velocidad. |
+| Sello de furia | Daño adicional por golpe; el escudo no se suma al daño. |
+| Sello de orden | Daño por activación calculado con el porcentaje de arma descrito; no es DPS ni daño garantizado por golpe. |
+| Sellos de Luz y sabiduría | Sanación o maná por activación. |
+| Sentencia | Efecto del sello y rango activos: daño, sanación o maná. Furia incluye daño y provocación; Cruzado y Justicia muestran 0 daño directo. |
+| Luz Sagrada y Destello de Luz | Sanación media del tooltip. |
+| Exorcismo, Martillo de cólera y Cólera Sagrada | Daño medio por objetivo. |
+| Choque Sagrado y Vigilia de la Luz | `daño/sanación`; el tooltip explica ambos valores. En Vigilia son efectos activados posteriormente con Choque Sagrado. |
+| Consagración | `total/duración` o `cantidad/t` si el cliente describe daño por tick. No se multiplica por enemigos. |
+| Escudo Sagrado, Aura de reprensión y Salvaguardia | Daño por activación cuando la descripción permite distinguirlo de sus otros efectos. |
+| Imposición de manos | Salud máxima propia únicamente si el texto indica explícitamente esa fórmula de sanación. |
+| Baluarte del templario | Absorción según el porcentaje explícito de salud máxima propia. |
+| Cruzado, Justicia, bendiciones de estadísticas, resistencias, inmunidades, limpiezas, resurrección, monturas y otras utilidades registradas | Sin etiqueta de daño: duración, amenaza, AP y costes no son daño del lanzamiento. |
 
-Los rangos se leen del cliente en cada actualización; no se fijan a las estadísticas del informe. Golpe Sagrado usa UnitDamage, que ya refleja el arma y poder de ataque: no se vuelve a sumar el AP. El tooltip del botón explica la operación fuera de combate. Los eventos de equipo, estadísticas y auras actualizan las estimaciones también en combate, si sus datos son legibles.
+Amarillo: daño; verde: sanación; azul: maná; violeta: absorción. Las habilidades con dos efectos presentan daño a la izquierda y sanación a la derecha. El tooltip del botón explica la unidad fuera de combate.
 
-Estas son estimaciones de un golpe normal antes de mitigación y crítico. Luz Sagrada usa la cantidad publicada por el tooltip; no se añadió un coeficiente de sanación ni una corrección de talentos no verificados. Un heal observado de 97 no prueba que cada lanzamiento deba ser 97; con este informe, el rango publicado es 78–93. La diferencia observada requiere contrastar buffs, rango y registro de combate del mismo lanzamiento.
+## Combate y datos protegidos
 
-Esta versión corrige la lectura de cantidades directas del tooltip. Conserva las líneas, reconoce rangos en español e inglés y muestra el promedio del rango indicado por el cliente. Un rango 88–106 muestra 97; eso no garantiza que cada lanzamiento sea de 97.
+Los números permanecen visibles y se recalculan ante cambios legibles de auras, arma, AP, poder de hechizos y salud máxima. Los eventos se agrupan a 0.1 s. Tras lanzar una habilidad se reintenta a 0.3 y 0.8 s para recoger auras retrasadas.
 
-Elimina la conversión no verificada de porcentajes a vida máxima. Fuera de los modelos indicados, porcentajes, daño de arma, sellos, daño periódico y descripciones con varios efectos requieren modelos específicos; sin modelo no se muestra un número. No se suma poder de hechizos indiscriminadamente: el tooltip puede incluirlo ya.
+El sello activo se confirma por su aura, nunca por una tecla o por el ID del lanzamiento. Se consulta directamente cada rango descubierto; la enumeración de auras permite reconocer nuevos IDs por su nombre. Un aura ajena protegida no invalida un sello legible.
 
-Se prueban casos sintéticos y las descripciones reales aportadas por el usuario con Lua 5.1. El manifiesto conserva Interface 16001. El acceso al sello usa C_UnitAuras.GetAuraDataByIndex y rechaza información protegida, inaccesible o ambigua.
+`~` indica la última estimación legible, pendiente de actualizar. La caché de Sentencia es independiente por ID/rango de sello: si se confirma un rango sin cantidades conocidas, se oculta el número anterior. Cambiar de casilla, habilidad o página también invalida los datos correspondientes.
+
+No se crean etiquetas protegidas ni se escanea GameTooltip en combate. Si recargas durante una pelea, los botones que todavía no tenían etiqueta esperan hasta salir. No se leen combat logs ni se reconstruyen valores secretos.
+
+## Límites de los cálculos
+
+Son estimaciones antes de mitigación, crítico y sobrecuración. No se añaden coeficientes de poder de hechizos o talentos que el cliente no describa y el modelo no contemple. Los procs se reflejan cuando modifican entradas legibles del cálculo.
+
+No se modela la amplificación del perjuicio de Cruzado sobre el enemigo, la probabilidad de cada proc, la condición de aturdimiento de Sentencia de Orden ni el total de daño de todos los objetivos. Descripciones con varias cantidades del mismo tipo sin una regla clara se dejan sin estimación.
+
+El informe real disponible corresponde al paladín de Forever 1.60.1 / build 70862 / esMX y verifica las fórmulas iniciales. Los nuevos rangos y familias tienen pruebas sintéticas; falta validar sus descripciones y ejecución en el cliente real. La lista de familias no equivale a una certificación de todas las habilidades, talentos, traducciones o builds.
 
 ## Instalación
 
-Copia la carpeta como `Interface/AddOns/damage.reader.skill` en la instalación de Forever que ejecutas. El archivo `damage.reader.skill.toc` debe quedar directamente dentro. Al actualizar, reemplaza los archivos y usa `/reload`.
+Descomprime `dist/damage.reader.skill-0.5.0.zip` dentro de `Interface/AddOns`, reemplazando la carpeta `damage.reader.skill`. El archivo `damage.reader.skill.toc` debe quedar directamente dentro. Ejecuta `/reload` fuera de combate y confirma `/drs status`: versión 0.5.0.
+
+Para verificar este cambio: coloca Rectitud rango 2 y Furia en las barras, comprueba sus cantidades y cambia entre ambos mientras observas Sentencia. Repite en combate. Si falta un valor, `/drs report` incluye ahora el libro de hechizos completo disponible, además de las barras.
 
 ## Comandos
 
-- `/drs status`: versión, build y disponibilidad de API.
+- `/drs status`: versión, build y APIs.
 - `/drs on`, `/drs off`: mostrar u ocultar.
-- `/drs refresh`: actualizar.
+- `/drs refresh`: releer el libro y actualizar barras; si estás en combate, la lectura del libro espera hasta salir.
 - `/drs scan`: acciones detectadas.
-- `/drs inspect N`: texto exacto de la casilla N y resultado.
-- `/drs report`: ventana copiable con build, idioma, estadísticas propias y descripciones de las habilidades colocadas.
+- `/drs inspect N`: descripción y resultado de la casilla N.
+- `/drs report`: informe copiable con build, idioma, estadísticas, barras y libro de hechizos.
 - `/drs reset`: restablecer preferencias.
 - `/drs debug`: mensajes de actualización.
 
-El informe evita nombres de jugador, cuenta y servidor. Permite comprobar qué cifras son costes, cantidades, duraciones o fórmulas antes de implementar modelos por habilidad.
+El informe evita nombres de jugador, cuenta y servidor.
 
-## Restricciones y validación
+## Pruebas y fuentes
 
-Se inspeccionan únicamente valores legibles. El comportamiento en combate se prueba con un cliente simulado en Lua 5.1; falta validarlo dentro del juego. No se registra el combat log ni se interpreta un total de combate como daño por golpe. No se implementó C_DamageMeter: sus totales no bastan por sí solos para esa predicción.
+Ejecuta con Lua 5.1:
 
-Pruebas: `lua5.1 tests/calculator.lua`, `lua5.1 tests/forever-paladin.lua` y `lua5.1 tests/combat.lua`. Incluyen entrada/salida de combate, aparición/expiración de procs simulados, cambios de sello, valores protegidos, paginación, sanación y agrupación de eventos. No sustituyen las pruebas en el juego.
+```sh
+lua5.1 tests/calculator.lua
+lua5.1 tests/forever-paladin.lua
+lua5.1 tests/combat.lua
+lua5.1 tests/paladin-ranks.lua
+```
 
-Referencia funcional: [DrDamage](https://www.curseforge.com/wow/addons/dr-damage) calcula usando equipo, talentos y buffs. Leer un tooltip es solamente una de las entradas necesarias para conseguir ese alcance.
+Las suites cubren el informe original, rangos desconocidos previamente, Furia, aislamiento de Sentencia por rango, cambio de botones, datos protegidos, libro moderno/clásico, cantidades de daño/sanación/maná/absorción y regresiones de combate. Los fixtures nuevos están identificados como sintéticos; no certifican los valores del juego.
+
+[Descripción oficial del paladín de Forever](https://news.blizzard.com/en-us/article/24302099/world-of-warcraft-forever-class-deep-dives-paladin): referencia de las familias y de los efectos separados de Furia. Sus valores pueden cambiar; el addon toma las cantidades del cliente.
+
+[Documentación de las APIs de libro de hechizos del cliente Blizzard](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/SpellBookDocumentation.lua): referencia de la interfaz moderna, con fallback a la clásica y comprobación de disponibilidad.

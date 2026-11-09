@@ -1,13 +1,15 @@
 local ADDON_NAME, ns = ...
 
 ns.name = ADDON_NAME or "damage.reader.skill"
-ns.version = "0.4.1"
+ns.version = "0.5.0"
 
 local DEFAULTS = {
     enabled = true,
     fontSize = 11,
     color = { 1.0, 0.82, 0.05 },
     healColor = { 0.20, 1.0, 0.20 },
+    manaColor = { 0.35, 0.65, 1.0 },
+    absorbColor = { 0.75, 0.55, 1.0 },
     debug = false,
 }
 
@@ -43,6 +45,10 @@ function ns:Refresh(reason)
         self:Print("actualización: " .. reason)
     end
 
+    if self.Calculator and self.Calculator.RefreshSpellbook
+        and (self.Calculator.spellbookDirty or not self.Calculator.knownSpells) then
+        self.Calculator:RefreshSpellbook()
+    end
     if self.Buttons then
         if type(InCombatLockdown) == "function" then
             self.Buttons:SetInCombat(InCombatLockdown())
@@ -108,6 +114,7 @@ function ns:HandleCommand(rawMessage)
     end
 
     if message == "refresh" then
+        self.Calculator.spellbookDirty = true
         self:Refresh("manual")
         self:Print("barras actualizadas.")
         return
@@ -201,6 +208,11 @@ SlashCmdList.DAMAGEREADERSKILL = function(message)
 end
 
 function ns:OnEvent(event, addonName)
+    if self.Calculator and (event == "SPELLS_CHANGED" or event == "PLAYER_LOGIN"
+        or event == "PLAYER_ENTERING_WORLD" or event == "SPELL_TEXT_UPDATE"
+        or event == "ACTIONBAR_SLOT_CHANGED") then
+        self.Calculator.spellbookDirty = true
+    end
     if event == "ADDON_LOADED" then
         if addonName ~= self.name then
             return
@@ -277,6 +289,9 @@ eventFrame:RegisterEvent("UPDATE_EXTRA_ACTIONBAR")
 eventFrame:RegisterEvent("UPDATE_OVERRIDE_ACTIONBAR")
 eventFrame:RegisterEvent("UPDATE_VEHICLE_ACTIONBAR")
 eventFrame:RegisterEvent("SPELLS_CHANGED")
+-- Some older clients do not expose this event.
+pcall(eventFrame.RegisterEvent, eventFrame, "SPELL_TEXT_UPDATE")
+eventFrame:RegisterEvent("UNIT_MAXHEALTH")
 eventFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
 eventFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")

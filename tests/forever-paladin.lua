@@ -26,6 +26,7 @@ C_UnitAuras = {GetAuraDataByIndex = function(unit, index, filter)
     if index == 1 and seal then return {spellId = seal} end
 end}
 C_Spell = {GetSpellDescription = function(id) return descriptions[id] end}
+assert(loadfile("Data.lua"))("damage.reader.skill", ns)
 assert(loadfile("Calculator.lua"))("damage.reader.skill", ns)
 assert(loadfile("Paladin.lua"))("damage.reader.skill", ns)
 local calc = ns.Calculator
