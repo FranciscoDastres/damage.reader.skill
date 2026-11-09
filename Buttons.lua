@@ -154,6 +154,14 @@ function ButtonManager:CreateOverlay(button)
             local value = currentButton.DamageReaderSkillResult
             if not value or ButtonManager.inCombat or not GameTooltip then return end
             GameTooltip:AddLine("Damage Reader Skill", 1, .82, .05)
+            if currentButton.DamageReaderSkillStale then
+                GameTooltip:AddLine("* Última lectura disponible; pendiente de actualizar.", 1, .75, .25, true)
+            end
+            if value.text:match("^≈") then
+                GameTooltip:AddLine("e = estimación aproximada con el daño actual del arma.", 1, 1, 1, true)
+            elseif value.text:match("^≥") then
+                GameTooltip:AddLine("+ = cantidad base; no incluye el efecto adicional indicado.", 1, 1, 1, true)
+            end
             GameTooltip:AddLine(value.metric or "Promedio del tooltip del cliente", 1, 1, 1, true)
             if value.min and value.max then
                 GameTooltip:AddLine(string.format("Rango: %.2f–%.2f", value.min, value.max), 1, 1, 1)
@@ -187,11 +195,41 @@ function ButtonManager:HideButton(button)
     end
 end
 
+-- Keep status marks after the number: ~ and ≈ at 11 px looked like a minus
+-- sign in the user's combat screenshot. Do not turn a real negative into
+-- a positive number; invalid model output must be hidden instead.
+function ButtonManager:GetDisplayText(value, stale)
+    if not value or not isSafe(value.text) or type(value.text) ~= "string" then return end
+    local function validNumbers(part)
+        for _, key in ipairs({"value", "min", "max"}) do
+            local number = part[key]
+            if type(number) ~= "nil" then
+                if not isSafe(number) or type(number) ~= "number"
+                    or number ~= number or number < 0 or number == math.huge then return false end
+            end
+        end
+        if part.min and part.max and part.max < part.min then return false end
+        return true
+    end
+    if not validNumbers(value) then return end
+    for _, effect in ipairs(value.effects or {}) do
+        if not validNumbers(effect) then return end
+    end
+    if value.healing and not validNumbers(value.healing) then return end
+    local text = value.text
+    if text:match("^≈") then text = text:gsub("^≈", "") .. "e"
+    elseif text:match("^≥") then text = text:gsub("^≥", "") .. "+" end
+    if not text:find("%d") or text:match("^%s*%-") or text:match("^%s*−") then return end
+    return text .. ((stale or value.stale) and "*" or "")
+end
+
 function ButtonManager:KeepLast(button)
     local value, text = button.DamageReaderSkillResult, button.DamageReaderSkillText
     if value and text then
+        local displayed = self:GetDisplayText(value, true)
+        if not displayed then self:HideButton(button); return end
         button.DamageReaderSkillStale = true
-        text:SetText("~" .. value.text)
+        text:SetText(displayed)
         text:Show()
     end
 end
@@ -261,6 +299,8 @@ function ButtonManager:UpdateButton(button)
         if self.inCombat and state ~= "empty" then self:KeepLast(button) else self:HideButton(button) end
         return
     end
+    local displayed = self:GetDisplayText(result)
+    if not displayed then self:HideButton(button); return end
 
     text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", ns.db.fontSize, "OUTLINE")
     local color = result.kind == "heal" and ns.db.healColor
@@ -268,7 +308,7 @@ function ButtonManager:UpdateButton(button)
         or result.kind == "energy" and ns.db.energyColor
         or result.kind == "absorb" and ns.db.absorbColor or ns.db.color
     text:SetTextColor(unpack(color))
-    text:SetText((result.stale and "~" or "") .. result.text)
+    text:SetText(displayed)
     button.DamageReaderSkillResult = result
     button.DamageReaderSkillSlot = actionSlot
     button.DamageReaderSkillSpellID = id

@@ -77,13 +77,13 @@ event("UNIT_AURA", "player") -- proc expires
 assert(label.value == "9")
 weaponLow = hidden
 event("UNIT_DAMAGE", "player")
-assert(label.value == "~9" and label.visible and ActionButton1.DamageReaderSkillStale)
+assert(label.value == "9*" and label.visible and ActionButton1.DamageReaderSkillStale)
 weaponLow = 20
 event("UNIT_DAMAGE", "player")
 assert(label.value == "9" and not ActionButton1.DamageReaderSkillStale)
 protectedText = true
 event("UNIT_AURA", "player")
-assert(label.value == "~9" and label.visible)
+assert(label.value == "9*" and label.visible)
 protectedText = false
 event("UNIT_AURA", "player")
 assert(label.value == "9")
@@ -101,7 +101,7 @@ event("UNIT_AURA", "player")
 assert(label.value == "0")
 seal = hidden
 event("UNIT_AURA", "player")
-assert(label.value == "~0")
+assert(label.value == "0*")
 seal = nil
 event("UNIT_AURA", "player")
 assert(not label.visible) -- a known absent seal clears the old number
@@ -113,7 +113,7 @@ event("SPELL_POWER_CHANGED")
 assert(label.value == "110" and label.color[2] == 1)
 protectedText = true
 event("UNIT_AURA", "player")
-assert(label.value == "~110")
+assert(label.value == "110*")
 protectedText = false
 fighting = false
 event("PLAYER_REGEN_ENABLED")
@@ -158,14 +158,14 @@ event("UNIT_AURA", "player")
 assert(label.value == "0")
 seal, protectedText = 21084, true
 event("UNIT_AURA", "player")
-assert(label.value == "~26" and ActionButton1.DamageReaderSkillStale)
+assert(label.value == "26*" and ActionButton1.DamageReaderSkillStale)
 protectedText = false
 event("UNIT_AURA", "player")
 assert(label.value == "26")
 -- Hidden seal identity is never decoded or inferred from a cast.
 C_UnitAuras.GetPlayerAuraBySpellID = function() return {spellId = hidden} end
 event("UNIT_AURA", "player")
-assert(label.value == "~26")
+assert(label.value == "26*")
 event("ACTIONBAR_PAGE_CHANGED")
 assert(not label.visible and not ActionButton1.DamageReaderSkillBinding)
 print("Seal-switch regression passed: unrelated secrets, delayed aura, direct lookup, cached amount, invalidation")
@@ -265,10 +265,10 @@ protectedText, comboPoints = false, 3
 playerClass, actionID = 'DRUID', 910002
 weaponLow, weaponHigh = 20, 40
 event('UPDATE_SHAPESHIFT_FORM')
-assert(label.value == '≈40')
+assert(label.value == '40e')
 weaponLow, weaponHigh = 40, 60
 event('UNIT_DAMAGE', 'player')
-assert(label.value == '≈60')
+assert(label.value == '60e')
 protectedAction = true
 event('UPDATE_SHAPESHIFT_FORM')
 assert(not label.visible and not ActionButton1.DamageReaderSkillBinding)
@@ -283,7 +283,7 @@ event('SPELL_POWER_CHANGED')
 assert(label.value == '40+80/8s')
 protectedText = true
 event('UNIT_AURA', 'player')
-assert(label.value == '~40+80/8s')
+assert(label.value == '40+80/8s*')
 protectedText = false
 playerClass, actionID = 'WARRIOR', 910005
 event('ACTIONBAR_SLOT_CHANGED', 1)
@@ -296,10 +296,10 @@ event('UNIT_POWER_UPDATE', 'player')
 assert(not label.visible)
 playerClass, actionID = 'HUNTER', 910006
 event('ACTIONBAR_SLOT_CHANGED', 1)
-assert(label.value == '≈100')
+assert(label.value == '100e')
 rangedLow = 70
 event('UNIT_RANGEDDAMAGE', 'player')
-assert(label.value == '≈110')
+assert(label.value == '110e')
 playerClass, actionID = 'PRIEST', 910007
 event('ACTIONBAR_SLOT_CHANGED', 1)
 assert(label.value == '200' and label.color[1] == .75 and label.color[3] == 1)

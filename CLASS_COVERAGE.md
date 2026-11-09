@@ -1,4 +1,4 @@
-# Cobertura de clases — v0.6.0
+# Cobertura de clases — v0.6.1
 
 El addon reconoce familias por nombre (español/inglés), no por una lista incompleta de IDs de rango. `ClassData.lua` contiene el registro de las ocho clases nuevas; `Data.lua` conserva el registro del paladín. El libro de hechizos y las barras aportan los IDs de los rangos del personaje.
 
@@ -11,7 +11,7 @@ El addon reconoce familias por nombre (español/inglés), no por una lista incom
 | Efecto inicial + periódico | Dos cantidades del mismo tipo, una directa y otra periódica | Componentes separados, como Bola de Fuego, Fuego lunar, Inmolar o Recrecimiento. |
 | Daño y sanación | Dos cantidades explícitas de distinto tipo | Separadas. Nova/Penitencia según uso; Espiral de la muerte según sus dos efectos. |
 | Absorción | Una cantidad explícita asociada a absorber | Capacidad del escudo; no daño ni sanación. |
-| Ataque con arma | Fórmula de arma publicada + UnitDamage o UnitRangedDamage legible | Aproximación marcada `≈`, antes de mitigación. Sin AP duplicado ni normalización interna inventada. |
+| Ataque con arma | Fórmula de arma publicada + UnitDamage o UnitRangedDamage legible | Aproximación marcada con `e` al final, antes de mitigación. Sin AP duplicado ni normalización interna inventada. |
 | Ambas armas | Texto explícito de ambas armas y dos rangos legibles | Aproximación; si no puede distinguir una bonificación por mano, no calcula. |
 | Remate | Puntos legibles y fila correspondiente en la tabla del tooltip | Cantidad para los puntos actuales; cero/desconocidos/filas ausentes ocultan el valor. |
 | Sed de sangre | Porcentaje de AP explícito + AP base y modificadores legibles | Daño del ataque; no suma curaciones posteriores. |
@@ -25,12 +25,12 @@ Las habilidades de utilidad registradas no muestran daño. Las profesiones, invo
 - La identidad de la clase no prueba una fórmula: si el texto cambia o contiene cantidades ambiguas, el addon explica el motivo en `/drs report` y no genera una cifra.
 - No se incorporan coeficientes de otra expansión, tablas de talentos, DPS esperados, probabilidad de procs, resistencias/armadura enemigas ni críticos esperados.
 - El daño de arma está marcado como aproximación porque las reglas de normalización de ataques especiales no se verificaron en este cliente. Las variantes de porcentaje según arma no se eligen sin evidencia.
-- Un remate con conversión adicional de energía muestra únicamente la base con `≥`. No se adivina la conversión ni se extrapola una fila de puntos ausente.
+- Un remate con conversión adicional de energía muestra únicamente la base con `+` al final. No se adivina la conversión ni se extrapola una fila de puntos ausente.
 - No se comprueban condiciones del objetivo, por ejemplo congelación para Lanza de hielo, veneno para Mutilar o Inmolar para Incinerar. Se muestra la cantidad base descrita, sin inventar ese multiplicador.
 - Llamas infernales, Quemadura de maná, Plan de contingencia, Embate con escudo e imbuciones condicionales de armas quedan registrados como pendientes de una fórmula específica. Sus autocostes, absorciones variables y condiciones requieren un informe real.
 - Los saltos de cadenas, objetivos adicionales de áreas, cargas de escudos, acumulaciones de sangrado/veneno y ataques de mascotas no se totalizan. No se añaden etiquetas a la barra de mascotas en esta versión.
 - Solo se dibuja sobre acciones de hechizos en las barras de Blizzard ya soportadas. Los venenos utilizados desde un objeto o una macro no se convierten automáticamente en acciones de hechizo.
-- Las lecturas protegidas se respetan. Las estimaciones de remates o Ejecutar se ocultan cuando no se puede confirmar su recurso; el resto conserva `~` únicamente mientras su contexto siga siendo válido.
+- Las lecturas protegidas se respetan. Las estimaciones de remates o Ejecutar se ocultan cuando no se puede confirmar su recurso; el resto conserva `*` al final únicamente mientras su contexto siga siendo válido.
 
 ## Evidencia y pruebas
 

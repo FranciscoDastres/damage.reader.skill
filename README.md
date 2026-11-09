@@ -2,7 +2,13 @@
 
 Addon independiente para mostrar estimaciones sobre las barras de Blizzard. Destino: WoW Forever, Interface 16001. No incluye código ni tablas de DrDamage.
 
-## Versión 0.6.0: las nueve clases
+## Versión 0.6.1: cifras claras durante el combate
+
+Se retiran los signos `~` y `≈` del comienzo de la cifra en la barra: con el tamaño pequeño podían parecer daño negativo. Una lectura pendiente de actualizar se ve como `18*`; una aproximación con arma como `55e`; y una cantidad base sin efecto adicional como `110+`. El tooltip explica los estados fuera de combate. Los informes conservan la notación de los modelos.
+
+Los rangos como `3–10` siguen siendo un mínimo y un máximo, no daño negativo. El renderizado también rechaza resultados realmente negativos, no finitos o con rangos invertidos; no los convierte en positivos ni muestra un cero inventado.
+
+## Familias de las nueve clases
 
 Se mantienen los modelos del paladín y se añaden familias para pícaro, druida, sacerdote, guerrero, mago, brujo, cazador y chamán. Cada rango se descubre por el nombre publicado por el cliente; las cantidades se leen de su descripción actual. No se importa una tabla de daños de Classic, TBC o WotLK.
 
@@ -25,9 +31,9 @@ Las cantidades se distinguen en la etiqueta:
 - `20/t`: cantidad por tick; el intervalo está en el tooltip. No se supone el número de ticks.
 - `25+40/8s`: golpe inicial y efecto periódico separados.
 - `25 | 35`: daño y sanación separados, explicados en el tooltip.
-- `≈55`: aproximación usando daño actual del arma; no incorpora la normalización interna de ataques especiales.
-- `≥110`: base del remate sin conversión no modelada de energía adicional.
-- `~`: lectura anterior pendiente de actualizar; no se usa para un remate con puntos desconocidos ni para Ejecutar con ira/coste ilegibles.
+- `55e`: aproximación usando daño actual del arma; no incorpora la normalización interna de ataques especiales.
+- `110+`: base del remate sin conversión no modelada de energía adicional.
+- `*` al final: lectura anterior pendiente de actualizar; no se usa para un remate con puntos desconocidos ni para Ejecutar con ira/coste ilegibles.
 
 [CLASS_COVERAGE.md](CLASS_COVERAGE.md) detalla las limitaciones y las fuentes oficiales. Estas familias no equivalen a todas las habilidades y condiciones del juego verificadas. Faltan informes reales de las clases nuevas; las pruebas nuevas usan descripciones sintéticas claramente identificadas.
 
@@ -62,7 +68,7 @@ Los números permanecen visibles y se recalculan ante cambios legibles de auras,
 
 El sello activo se confirma por su aura, nunca por una tecla o por el ID del lanzamiento. Se consulta directamente cada rango descubierto; la enumeración de auras permite reconocer nuevos IDs por su nombre. Un aura ajena protegida no invalida un sello legible.
 
-`~` indica la última estimación legible, pendiente de actualizar. La caché de Sentencia es independiente por ID/rango de sello: si se confirma un rango sin cantidades conocidas, se oculta el número anterior. Cambiar de casilla, habilidad o página también invalida los datos correspondientes.
+`*` al final indica la última estimación legible, pendiente de actualizar. La caché de Sentencia es independiente por ID/rango de sello: si se confirma un rango sin cantidades conocidas, se oculta el número anterior. Cambiar de casilla, habilidad o página también invalida los datos correspondientes.
 
 No se crean etiquetas protegidas ni se escanea GameTooltip en combate. Si recargas durante una pelea, los botones que todavía no tenían etiqueta esperan hasta salir. No se leen combat logs ni se reconstruyen valores secretos.
 
@@ -76,7 +82,7 @@ El informe real disponible corresponde al paladín de Forever 1.60.1 / build 708
 
 ## Instalación
 
-Descomprime `dist/damage.reader.skill-0.6.0.zip` dentro de `Interface/AddOns`, reemplazando la carpeta `damage.reader.skill`. El archivo `damage.reader.skill.toc` debe quedar directamente dentro. Ejecuta `/reload` fuera de combate y confirma `/drs status`: versión 0.6.0.
+Descomprime `dist/damage.reader.skill-0.6.1.zip` dentro de `Interface/AddOns`, reemplazando la carpeta `damage.reader.skill`. El archivo `damage.reader.skill.toc` debe quedar directamente dentro. Ejecuta `/reload` fuera de combate y confirma `/drs status`: versión 0.6.1.
 
 Para verificar este cambio: prueba un ataque directo y uno periódico de tu clase, cambia de rango y repite en combate. Para pícaro/druida, comprueba remates con 0, 1 y 5 puntos de combo y al cambiar de objetivo. Para guerrero, comprueba Ejecutar con distintos niveles de ira. Los casos originales de Rectitud rango 2 y Furia siguen incluidos. Si falta un valor, `/drs report` incluye ahora el libro de hechizos completo disponible, además de las barras.
 
@@ -103,6 +109,7 @@ lua5.1 tests/forever-paladin.lua
 lua5.1 tests/combat.lua
 lua5.1 tests/paladin-ranks.lua
 lua5.1 tests/classes.lua
+lua5.1 tests/display.lua
 ```
 
 Las suites cubren las ocho clases nuevas y sus eventos de combate, el informe original, rangos desconocidos previamente, Furia, aislamiento de Sentencia por rango, cambio de botones, datos protegidos, libro moderno/clásico, cantidades de daño/sanación/maná/absorción y regresiones de combate. Los fixtures nuevos están identificados como sintéticos; no certifican los valores del juego.
