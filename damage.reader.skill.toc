@@ -2,13 +2,16 @@
 ## Title: Damage Reader Skill
 ## Notes: Muestra una estimación de daño o sanación sobre las habilidades de las barras de acción.
 ## Author: Damage Reader Skill
-## Version: 0.5.0
+## Version: 0.6.0
 ## SavedVariables: DamageReaderSkillDB
 ## Category: Combat
 
 Core.lua
 Data.lua
+ClassData.lua
 Calculator.lua
 Paladin.lua
+Effects.lua
+Classes.lua
 Spellbook.lua
 Buttons.lua

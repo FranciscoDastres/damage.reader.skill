@@ -1,0 +1,82 @@
+local _, ns = ...
+
+-- Spell families only: no rank IDs, damage tables or expansion coefficients.
+-- The exact rank and its quantities always come from the current client.
+-- English and Spanish aliases; unknown translations remain visible in /drs report.
+ns.ClassFamilies = {
+    ROGUE = {
+        weapon = "Sinister Strike|Golpe siniestro|Backstab|Puñalada|Ambush|Emboscada|Riposte|Estocada|Ghostly Strike|Golpe fantasmal|Hemorrhage|Hemorragia",
+        both = "Mutilate|Mutilar",
+        combo = "Eviscerate|Eviscerar|Rupture|Ruptura",
+        periodic = "Garrote|Garrote|Deadly Poison|Veneno mortal",
+        direct = "Gouge|Gubia|Kick|Patada|Instant Poison|Veneno instantáneo|Wound Poison|Veneno hiriente",
+        utility = "Stealth|Sigilo|Vanish|Esfumarse|Sprint|Carrera|Evasion|Evasión|Feint|Amago|Sap|Porrazo|Blind|Ceguera|Distract|Distraer|Pick Pocket|Robar|Pick Lock|Forzar cerradura|Cheap Shot|Golpe bajo|Kidney Shot|Golpe en los riñones|Slice and Dice|Hacer picadillo|Expose Armor|Exponer armadura|Cold Blood|Sangre fría|Adrenaline Rush|Subidón de adrenalina|Blade Flurry|Aluvión de acero|Preparation|Preparación|Premeditation|Premeditación|Venom|Crippling Poison|Veneno entorpecedor|Mind-numbing Poison|Veneno de aturdimiento mental|Detect Traps|Detectar trampas|Disarm Trap|Desarmar trampa|Safe Fall|Caída segura",
+    },
+    DRUID = {
+        direct = "Wrath|Cólera|Starfire|Fuego estelar|Healing Touch|Toque de sanación|Swiftmend|Alivio presto|Ferocious Regeneration|Regeneración feroz",
+        mixed = "Moonfire|Fuego lunar|Regrowth|Recrecimiento|Rake|Arañazo|Lacerate|Lacerar|Pounce|Abalanzarse",
+        periodic = "Rejuvenation|Rejuvenecimiento|Insect Swarm|Enjambre de insectos|Entangling Roots|Raíces enredadoras|Hurricane|Huracán|Tranquility|Tranquilidad",
+        weapon = "Claw|Zarpa|Shred|Triturar|Maul|Magullar|Swipe|Flagelo|Primal Bite|Mordisco primigenio|Mordisco primitivo",
+        combo = "Rip|Destripar|Ferocious Bite|Mordedura feroz",
+        reactive = "Thorns|Espinas",
+        resource = "Shifting Power|Poder cambiante|Frenzied Regeneration|Regeneración frenética",
+        utility = "Mark of the Wild|Marca de lo Salvaje|Gift of the Wild|Don de lo Salvaje|Bear Form|Forma de oso|Dire Bear Form|Forma de oso temible|Cat Form|Forma felina|Travel Form|Forma de viaje|Aquatic Form|Forma acuática|Moonkin Form|Forma de lechúcico lunar|Tree of Life|Árbol de vida|Prowl|Acechar|Dash|Carrera|Bash|Azote|Growl|Bramido|Challenging Roar|Rugido desafiante|Demoralizing Roar|Rugido desmoralizador|Enrage|Enfurecer|Tiger's Fury|Furia del tigre|Faerie Fire|Fuego feérico|Faerie Fire (Feral)|Fuego feérico (feral)|Feral Charge|Carga feral|Barkskin|Piel de corteza|Innervate|Estimular|Rebirth|Renacer|Revive|Revivir|Remove Curse|Eliminar maldición|Cure Poison|Curar veneno|Abolish Poison|Abolir veneno|Hibernate|Hibernar|Nature's Grasp|Trabazón con la Naturaleza|Nature's Swiftness|Presteza de la Naturaleza|Omen of Clarity|Augurio de claridad|Soothe Animal|Calmar animal|Track Humanoids|Rastrear humanoides|Teleport: Moonglade|Teletransporte: Claro de la Luna",
+    },
+    PRIEST = {
+        direct = "Smite|Punición|Mind Blast|Explosión mental|Shadow Word: Death|Palabra de las Sombras: muerte|Lesser Heal|Sanación inferior|Heal|Sanar|Greater Heal|Sanación superior|Flash Heal|Sanación relámpago|Binding Heal|Sanación conjunta|Prayer of Healing|Rezo de sanación|Desperate Prayer|Rezo desesperado|Divine Grace|Gracia divina|Chastise|Castigar",
+        mixed = "Holy Fire|Fuego Sagrado",
+        periodic = "Shadow Word: Pain|Palabra de las Sombras: dolor|Renew|Renovar|Mind Flay|Tortura mental|Starshards|Fragmentos estelares",
+        drain = "Devouring Plague|Peste devoradora",
+        dual = "Holy Nova|Nova Sagrada|Penance|Penitencia",
+        absorb = "Power Word: Shield|Palabra de poder: escudo",
+        reactive = "Prayer of Mending|Rezo de alivio|Shadowguard|Guardia de las Sombras|Touch of Weakness|Toque de debilidad",
+        resource = "Dark Sacrifice|Sacrificio oscuro",
+        conditional = "Mana Burn|Quemadura de maná|Contingency Plan|Plan de contingencia",
+        utility = "Power Word: Fortitude|Palabra de poder: entereza|Prayer of Fortitude|Rezo de entereza|Divine Spirit|Espíritu divino|Prayer of Spirit|Rezo de espíritu|Shadow Protection|Protección contra las Sombras|Prayer of Shadow Protection|Rezo de protección contra las Sombras|Inner Fire|Fuego interno|Inner Focus|Enfoque interno|Power Infusion|Infusión de poder|Fade|Desvanecerse|Psychic Scream|Alarido psíquico|Silence|Silencio|Mind Control|Control mental|Mind Soothe|Calma mental|Mind Vision|Visión mental|Dispel Magic|Disipar magia|Cure Disease|Curar enfermedad|Abolish Disease|Abolir enfermedad|Resurrection|Resurrección|Levitate|Levitar|Shackle Undead|Encadenar no-muerto|Fear Ward|Resguardo de miedo|Shadowform|Forma de las Sombras|Vampiric Embrace|Abrazo vampírico|Elune's Grace|Gracia de Elune|Hex of Weakness|Maleficio de debilidad|Feedback|Reacción|Confounding Flash|Destello desconcertante",
+    },
+    WARRIOR = {
+        weapon = "Heroic Strike|Golpe heroico|Cleave|Rajar|Slam|Embate|Mortal Strike|Golpe mortal|Overpower|Abrumar|Whirlwind|Torbellino|Devastate|Devastar",
+        direct = "Thunder Clap|Atronar|Revenge|Revancha|Hamstring|Seccionar|Intercept|Interceptar|Shield Bash|Azote de escudo|Mocking Blow|Falsa arremetida",
+        periodic = "Rend|Desgarrar",
+        attackpower = "Bloodthirst|Sed de sangre",
+        execute = "Execute|Ejecutar",
+        conditional = "Shield Slam|Embate con escudo",
+        utility = "Battle Stance|Actitud de batalla|Defensive Stance|Actitud defensiva|Berserker Stance|Actitud rabiosa|Charge|Cargar|Taunt|Provocar|Challenging Shout|Grito desafiante|Demoralizing Shout|Grito desmoralizador|Battle Shout|Grito de batalla|Commanding Shout|Grito de orden|Intimidating Shout|Grito intimidador|Sunder Armor|Hender armadura|Disarm|Desarmar|Pummel|Zurrar|Shield Block|Bloquear con escudo|Shield Wall|Muro de escudo|Retaliation|Represalias|Recklessness|Temeridad|Berserker Rage|Ira rabiosa|Bloodrage|Ira sangrienta|Last Stand|Última carga|Death Wish|Deseo de la Muerte|Sweeping Strikes|Golpes de barrido|Concussion Blow|Golpe de conmoción|Piercing Howl|Aullido perforador|Challenging Roar|Rugido desafiante",
+    },
+    MAGE = {
+        direct = "Frostbolt|Descarga de Escarcha|Fire Blast|Explosión de Fuego|Scorch|Agostar|Arcane Explosion|Explosión Arcana|Cone of Cold|Cono de frío|Frost Nova|Nova de Escarcha|Blast Wave|Ola explosiva|Ice Lance|Lanza de hielo|Arcane Blast|Explosión Arcana superior|Deflagración Arcana",
+        mixed = "Fireball|Bola de Fuego|Pyroblast|Piroexplosión|Flamestrike|Fogonazo|Frostfire Bolt|Descarga de Pirofrío|Descarga de Fuego de Escarcha",
+        periodic = "Arcane Missiles|Misiles Arcanos|Blizzard|Ventisca",
+        absorb = "Mana Shield|Escudo de maná|Ice Barrier|Barrera de hielo|Fire Ward|Resguardo contra el Fuego|Frost Ward|Resguardo contra la Escarcha",
+        resource = "Evocation|Evocación",
+        utility = "Arcane Intellect|Intelecto Arcano|Arcane Brilliance|Luminosidad Arcana|Frost Armor|Armadura de Escarcha|Ice Armor|Armadura de hielo|Mage Armor|Armadura de mago|Dampen Magic|Atenuar magia|Amplify Magic|Amplificar magia|Blink|Traslación|Polymorph|Polimorfia|Counterspell|Contrahechizo|Remove Lesser Curse|Eliminar maldición inferior|Slow Fall|Caída lenta|Ice Block|Bloque de hielo|Cold Snap|Mordedura de frío|Presence of Mind|Presencia mental|Arcane Power|Poder Arcano|Combustion|Combustión|Conjure Food|Crear comida|Conjure Water|Crear agua|Conjure Mana Agate|Crear ágata de maná|Conjure Mana Jade|Crear jade de maná|Conjure Mana Citrine|Crear citrino de maná|Conjure Mana Ruby|Crear rubí de maná|Comprehend Scroll|Comprender pergamino",
+    },
+    WARLOCK = {
+        direct = "Shadow Bolt|Descarga de las Sombras|Searing Pain|Dolor abrasador|Soul Fire|Fuego de alma|Shadowburn|Quemadura de las Sombras|Conflagrate|Conflagrar|Incinerate|Incinerar",
+        mixed = "Immolate|Inmolar",
+        periodic = "Corruption|Corrupción|Bane of Agony|Agonía|Fatalidad de agonía|Maldición de agonía|Curse of Agony|Bane of Doom|Fatalidad|Maldición de fatalidad|Curse of Doom|Rain of Fire|Lluvia de Fuego|Drain Soul|Drenar alma|Wrack|Tormento",
+        drain = "Drain Life|Drenar vida|Siphon Life|Succionar vida|Death Coil|Espiral de la muerte",
+        resource = "Life Tap|Transfusión de vida|Drain Mana|Drenar maná|Health Funnel|Cauce de salud",
+        conditional = "Hellfire|Llamas infernales",
+        absorb = "Shadow Ward|Resguardo de las Sombras",
+        utility = "Demon Skin|Piel de demonio|Demon Armor|Armadura demoníaca|Fel Armor|Armadura vil|Curse of Weakness|Maldición de debilidad|Curse of Recklessness|Maldición de Temeridad|Curse of Tongues|Maldición de las Lenguas|Curse of the Elements|Maldición de los Elementos|Curse of Shadows|Maldición de las Sombras|Curse of Exhaustion|Maldición de agotamiento|Bane of Havoc|Estragos|Fear|Miedo|Howl of Terror|Aullido de terror|Banish|Desterrar|Enslave Demon|Esclavizar demonio|Subjugate Demon|Subyugar demonio|Detect Invisibility|Detectar invisibilidad|Unending Breath|Respiración interminable|Eye of Kilrogg|Ojo de Kilrogg|Sense Demons|Sentir demonios|Ritual of Summoning|Ritual de invocación|Summon Imp|Invocar diablillo|Summon Voidwalker|Invocar abisario|Summon Succubus|Invocar súcubo|Summon Incubus|Invocar íncubo|Summon Felhunter|Invocar manáfago|Summon Felsteed|Invocar corcel nefasto|Summon Dreadsteed|Invocar corcel de la muerte|Inferno|Inferno|Ritual of Doom|Ritual de fatalidad|Create Healthstone|Crear piedra de salud|Create Soulstone|Crear piedra de alma|Create Firestone|Crear piedra de Fuego|Create Spellstone|Crear piedra de hechizo|Soul Link|Enlace de alma|Fel Domination|Dominación vil|Demonic Sacrifice|Sacrificio demoníaco|Demonic Brand|Marca demoníaca",
+    },
+    HUNTER = {
+        ranged = "Auto Shot|Disparo automático|Aimed Shot|Disparo de puntería|Multi-Shot|Multidisparo",
+        weapon = "Raptor Strike|Golpe de raptor|Mongoose Bite|Mordedura de mangosta|Counterattack|Contraataque|Wing Clip|Cortar alas",
+        direct = "Arcane Shot|Disparo Arcano|Distracting Shot|Disparo de distracción",
+        periodic = "Serpent Sting|Picadura de serpiente|Immolation Trap|Trampa de inmolación|Volley|Salva|Mend Pet|Aliviar mascota",
+        mixed = "Explosive Trap|Trampa explosiva",
+        resource = "Viper Sting|Picadura de víbora",
+        utility = "Hunter's Mark|Marca del cazador|Aspect of the Hawk|Aspecto del halcón|Aspect of the Monkey|Aspecto del mono|Aspect of the Cheetah|Aspecto del guepardo|Aspect of the Pack|Aspecto de la manada|Aspect of the Beast|Aspecto de la bestia|Aspect of the Wild|Aspecto salvaje|Scare Beast|Asustar bestia|Beast Lore|Conocimiento de bestias|Eagle Eye|Ojo de águila|Eyes of the Beast|Ojos de la bestia|Feign Death|Fingir muerte|Disengage|Separación|Concussive Shot|Disparo de conmoción|Scorpid Sting|Picadura de escórpido|Tranquilizing Shot|Disparo tranquilizante|Freezing Trap|Trampa congelante|Frost Trap|Trampa de Escarcha|Flare|Bengala|Rapid Fire|Fuego rápido|Tame Beast|Domar bestia|Call Pet|Llamar mascota|Dismiss Pet|Retirar mascota|Revive Pet|Revivir mascota|Feed Pet|Alimentar mascota|Bestial Wrath|Cólera de las bestias|Intimidation|Intimidación|Trueshot Aura|Aura de disparo certero|Scatter Shot|Disparo de dispersión|Wyvern Sting|Picadura de dracoleón|Deterrence|Disuasión",
+    },
+    SHAMAN = {
+        direct = "Lightning Bolt|Descarga de relámpagos|Chain Lightning|Cadena de relámpagos|Earth Shock|Choque de tierra|Frost Shock|Choque de Escarcha|Lava Burst|Ráfaga de lava|Healing Wave|Ola de sanación|Lesser Healing Wave|Ola de sanación inferior|Chain Heal|Sanación en cadena|Fire Nova Totem|Tótem Nova de Fuego",
+        mixed = "Flame Shock|Choque de llamas|Riptide|Mareas vivas",
+        periodic = "Searing Totem|Tótem abrasador|Magma Totem|Tótem de magma|Healing Stream Totem|Tótem Corriente de sanación|Mana Spring Totem|Tótem Fuente de maná",
+        both = "Stormstrike|Golpe de tormenta",
+        reactive = "Lightning Shield|Escudo de relámpagos|Earth Shield|Escudo de tierra|Water Shield|Escudo de agua",
+        conditional = "Flametongue Weapon|Arma Lengua de Fuego|Frostbrand Weapon|Arma Estigma de Escarcha|Windfury Weapon|Arma Viento Furioso",
+        utility = "Rockbiter Weapon|Arma Muerdepiedras|Lightning Shield (Improved)|Ghost Wolf|Lobo fantasmal|Astral Recall|Reencarnación astral|Regreso astral|Reincarnation|Reencarnación|Ancestral Spirit|Espíritu ancestral|Water Walking|Caminar sobre el agua|Water Breathing|Respiración acuática|Far Sight|Visión lejana|Purge|Purgar|Cure Disease|Curar enfermedad|Cure Poison|Curar veneno|Nature's Swiftness|Presteza de la Naturaleza|Elemental Mastery|Maestría elemental|Shamanistic Rage|Ira del chamán|Mana Tide Totem|Tótem Marea de maná|Earthbind Totem|Tótem Nexo terrestre|Stoneclaw Totem|Tótem Garra de piedra|Stoneskin Totem|Tótem Piel de piedra|Strength of Earth Totem|Tótem Fuerza de la tierra|Tremor Totem|Tótem de tremor|Grounding Totem|Tótem derribador|Windfury Totem|Tótem Viento Furioso|Grace of Air Totem|Tótem Gracia del aire|Windwall Totem|Tótem Muro de viento|Tranquil Air Totem|Tótem de Aire sosegado|Flametongue Totem|Tótem Lengua de Fuego|Fire Resistance Totem|Tótem de resistencia al Fuego|Frost Resistance Totem|Tótem de resistencia a la Escarcha|Nature Resistance Totem|Tótem de resistencia a la Naturaleza|Poison Cleansing Totem|Tótem contraveneno|Disease Cleansing Totem|Tótem de limpieza de enfermedades|Totemic Recall|Llamada totémica|Totemic Projection|Proyección totémica|Call of the Elements|Llamada de los elementos|Call of the Ancestors|Llamada de los ancestros|Call of the Spirits|Llamada de los espíritus",
+    },
+}

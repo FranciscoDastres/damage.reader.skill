@@ -2,7 +2,36 @@
 
 Addon independiente para mostrar estimaciones sobre las barras de Blizzard. Destino: WoW Forever, Interface 16001. No incluye código ni tablas de DrDamage.
 
-## Versión 0.5.0: familias y rangos del paladín
+## Versión 0.6.0: las nueve clases
+
+Se mantienen los modelos del paladín y se añaden familias para pícaro, druida, sacerdote, guerrero, mago, brujo, cazador y chamán. Cada rango se descubre por el nombre publicado por el cliente; las cantidades se leen de su descripción actual. No se importa una tabla de daños de Classic, TBC o WotLK.
+
+| Clase | Modelos añadidos |
+| --- | --- |
+| Pícaro | Ataques con arma, Mutilar, Garrote, venenos con cantidad explícita y remates con tabla por puntos de combo. |
+| Druida | Daño y sanación de hechizos, efectos iniciales + periódicos, ataques ferales, remates y Espinas. |
+| Sacerdote | Daño, curaciones, Renovar, escudo, Nova Sagrada/Penitencia, Peste devoradora y Rezo de alivio. |
+| Guerrero | Ataques con arma, daño directo, Desgarrar, porcentaje explícito de AP para Sed de sangre y fórmula legible de Ejecutar. |
+| Mago | Daño directo, inicial + periódico, canales, daño de área por objetivo y absorciones. |
+| Brujo | Daño directo/periódico, drenajes, Transfusión de vida, Cauce de salud y Resguardo de las Sombras. |
+| Cazador | Ataques a distancia/cuerpo a cuerpo, picaduras, trampas y Aliviar mascota. |
+| Chamán | Hechizos directos, sanación, efectos periódicos/tótems, Golpe de tormenta y escudos reactivos. |
+
+Puntos de combo, ira, daño a distancia, cambio de objetivo y cambio de forma también solicitan recálculo. Sin puntos de combo legibles, un remate no conserva el valor correspondiente a otro número de puntos. Cambiar de forma invalida las asociaciones anteriores de los botones.
+
+Las cantidades se distinguen en la etiqueta:
+
+- `120/12s`: total periódico por objetivo durante 12 segundos.
+- `20/t`: cantidad por tick; el intervalo está en el tooltip. No se supone el número de ticks.
+- `25+40/8s`: golpe inicial y efecto periódico separados.
+- `25 | 35`: daño y sanación separados, explicados en el tooltip.
+- `≈55`: aproximación usando daño actual del arma; no incorpora la normalización interna de ataques especiales.
+- `≥110`: base del remate sin conversión no modelada de energía adicional.
+- `~`: lectura anterior pendiente de actualizar; no se usa para un remate con puntos desconocidos ni para Ejecutar con ira/coste ilegibles.
+
+[CLASS_COVERAGE.md](CLASS_COVERAGE.md) detalla las limitaciones y las fuentes oficiales. Estas familias no equivalen a todas las habilidades y condiciones del juego verificadas. Faltan informes reales de las clases nuevas; las pruebas nuevas usan descripciones sintéticas claramente identificadas.
+
+## Modelos del paladín conservados
 
 Las habilidades se reconocen por su nombre de familia en español o inglés, en lugar de depender del ID de un solo rango. Al aprender un rango se actualiza el registro desde el libro de hechizos y las barras. Esto incluye Rectitud de rango 2 y posteriores, Furia y los rangos de las demás familias de la tabla. Las cantidades se leen del rango exacto que expone el cliente: no hay una tabla de daño fija ni se reutilizan los números de rango 1.
 
@@ -47,9 +76,9 @@ El informe real disponible corresponde al paladín de Forever 1.60.1 / build 708
 
 ## Instalación
 
-Descomprime `dist/damage.reader.skill-0.5.0.zip` dentro de `Interface/AddOns`, reemplazando la carpeta `damage.reader.skill`. El archivo `damage.reader.skill.toc` debe quedar directamente dentro. Ejecuta `/reload` fuera de combate y confirma `/drs status`: versión 0.5.0.
+Descomprime `dist/damage.reader.skill-0.6.0.zip` dentro de `Interface/AddOns`, reemplazando la carpeta `damage.reader.skill`. El archivo `damage.reader.skill.toc` debe quedar directamente dentro. Ejecuta `/reload` fuera de combate y confirma `/drs status`: versión 0.6.0.
 
-Para verificar este cambio: coloca Rectitud rango 2 y Furia en las barras, comprueba sus cantidades y cambia entre ambos mientras observas Sentencia. Repite en combate. Si falta un valor, `/drs report` incluye ahora el libro de hechizos completo disponible, además de las barras.
+Para verificar este cambio: prueba un ataque directo y uno periódico de tu clase, cambia de rango y repite en combate. Para pícaro/druida, comprueba remates con 0, 1 y 5 puntos de combo y al cambiar de objetivo. Para guerrero, comprueba Ejecutar con distintos niveles de ira. Los casos originales de Rectitud rango 2 y Furia siguen incluidos. Si falta un valor, `/drs report` incluye ahora el libro de hechizos completo disponible, además de las barras.
 
 ## Comandos
 
@@ -73,9 +102,10 @@ lua5.1 tests/calculator.lua
 lua5.1 tests/forever-paladin.lua
 lua5.1 tests/combat.lua
 lua5.1 tests/paladin-ranks.lua
+lua5.1 tests/classes.lua
 ```
 
-Las suites cubren el informe original, rangos desconocidos previamente, Furia, aislamiento de Sentencia por rango, cambio de botones, datos protegidos, libro moderno/clásico, cantidades de daño/sanación/maná/absorción y regresiones de combate. Los fixtures nuevos están identificados como sintéticos; no certifican los valores del juego.
+Las suites cubren las ocho clases nuevas y sus eventos de combate, el informe original, rangos desconocidos previamente, Furia, aislamiento de Sentencia por rango, cambio de botones, datos protegidos, libro moderno/clásico, cantidades de daño/sanación/maná/absorción y regresiones de combate. Los fixtures nuevos están identificados como sintéticos; no certifican los valores del juego.
 
 [Descripción oficial del paladín de Forever](https://news.blizzard.com/en-us/article/24302099/world-of-warcraft-forever-class-deep-dives-paladin): referencia de las familias y de los efectos separados de Furia. Sus valores pueden cambiar; el addon toma las cantidades del cliente.
 

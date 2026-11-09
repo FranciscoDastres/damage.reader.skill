@@ -38,8 +38,11 @@ C_Timer = {After = function(delay, fn) queued[#queued + 1] = {delay = delay, fn 
 SlashCmdList = {}
 assert(loadfile("Core.lua"))("damage.reader.skill", ns)
 assert(loadfile("Data.lua"))("damage.reader.skill", ns)
+assert(loadfile("ClassData.lua"))("damage.reader.skill", ns)
 assert(loadfile("Calculator.lua"))("damage.reader.skill", ns)
 assert(loadfile("Paladin.lua"))("damage.reader.skill", ns)
+assert(loadfile("Effects.lua"))("damage.reader.skill", ns)
+assert(loadfile("Classes.lua"))("damage.reader.skill", ns)
 assert(loadfile("Spellbook.lua"))("damage.reader.skill", ns)
 assert(loadfile("Buttons.lua"))("damage.reader.skill", ns)
 ns:InitializeDatabase()
@@ -215,3 +218,89 @@ actionID = 900004
 event("ACTIONBAR_SLOT_CHANGED", 1)
 assert(label.value == "40" and label.color[3] == 1 and label.color[2] == .65)
 print("Rank upgrade integration passed: learned ranks, Judgment isolation, button replacement and mana color")
+
+-- Multi-class integration: the exact same overlay follows target combo points,
+-- form paging, readable procs, rage and ranged-weapon changes in combat.
+local playerClass, comboPoints, rage = 'ROGUE', 3, 40
+UnitClass = function() return playerClass, playerClass end
+GetComboPoints = function() return comboPoints end
+UnitPower = function() return rage end
+local oldName = C_Spell.GetSpellName
+local classNames = {[910001]='Eviscerate', [910002]='Claw', [910003]='Wrath', [910004]='Fireball',
+    [910005]='Execute', [910006]='Aimed Shot', [910007]='Power Word: Shield'}
+C_Spell.GetSpellName = function(id) return classNames[id] or oldName(id) end
+descriptions[910001] = 'Finishing move that causes damage:\n1 combo point: 10 to 20 damage\n3 combo points: 30 to 40 damage\n5 combo points: 50 to 60 damage'
+descriptions[910002] = 'Causes normal damage plus 10.'
+descriptions[910003] = 'Deals 40 to 60 Nature damage.'
+descriptions[910004] = 'Deals 20 Fire damage and an additional 40 Fire damage over 8 sec.'
+descriptions[910005] = 'Causes 100 damage plus 3 for each extra point of rage.'
+descriptions[910006] = 'Increases ranged damage by 40.'
+descriptions[910007] = 'Absorbs 200 damage. Lasts 30 sec.'
+C_Spell.GetSpellPowerCost = function() return {{type=1, minCost=15, cost=100}} end
+local rangedLow = 50
+UnitRangedDamage = function() return 2.5, rangedLow, 70 end
+protectedAction, protectedText, fighting = false, false, true
+actionID = 910001
+event('ACTIONBAR_SLOT_CHANGED', 1)
+assert(label.value == '35')
+comboPoints = 5
+event('UNIT_COMBO_POINTS', 'target')
+assert(label.value == '55')
+comboPoints = 0
+event('UNIT_POWER_UPDATE', 'player')
+assert(not label.visible, 'zero combo points kept a finishing-move estimate')
+comboPoints = 3
+event('UNIT_POWER_FREQUENT', 'player')
+assert(label.value == '35')
+comboPoints = hidden
+event('UNIT_POWER_UPDATE', 'player')
+assert(not label.visible, 'secret combo points kept an estimate for an unknown point count')
+comboPoints = 5
+event('UNIT_POWER_UPDATE', 'player')
+assert(label.value == '55')
+comboPoints, protectedText = hidden, true
+event('PLAYER_TARGET_CHANGED')
+assert(not label.visible, 'target switch preserved another target finishing-move result')
+protectedText, comboPoints = false, 3
+playerClass, actionID = 'DRUID', 910002
+weaponLow, weaponHigh = 20, 40
+event('UPDATE_SHAPESHIFT_FORM')
+assert(label.value == '≈40')
+weaponLow, weaponHigh = 40, 60
+event('UNIT_DAMAGE', 'player')
+assert(label.value == '≈60')
+protectedAction = true
+event('UPDATE_SHAPESHIFT_FORM')
+assert(not label.visible and not ActionButton1.DamageReaderSkillBinding)
+protectedAction, actionID = false, 910003
+event('UPDATE_SHAPESHIFT_FORM')
+assert(label.value == '50')
+playerClass, actionID = 'MAGE', 910004
+event('ACTIONBAR_SLOT_CHANGED', 1)
+assert(label.value == '20+40/8s')
+descriptions[910004] = 'Deals 40 Fire damage and an additional 80 Fire damage over 8 sec.'
+event('SPELL_POWER_CHANGED')
+assert(label.value == '40+80/8s')
+protectedText = true
+event('UNIT_AURA', 'player')
+assert(label.value == '~40+80/8s')
+protectedText = false
+playerClass, actionID = 'WARRIOR', 910005
+event('ACTIONBAR_SLOT_CHANGED', 1)
+assert(label.value == '175')
+rage = 20
+event('UNIT_POWER_UPDATE', 'player')
+assert(label.value == '115')
+rage = hidden
+event('UNIT_POWER_UPDATE', 'player')
+assert(not label.visible)
+playerClass, actionID = 'HUNTER', 910006
+event('ACTIONBAR_SLOT_CHANGED', 1)
+assert(label.value == '≈100')
+rangedLow = 70
+event('UNIT_RANGEDDAMAGE', 'player')
+assert(label.value == '≈110')
+playerClass, actionID = 'PRIEST', 910007
+event('ACTIONBAR_SLOT_CHANGED', 1)
+assert(label.value == '200' and label.color[1] == .75 and label.color[3] == 1)
+print('Multi-class combat passed: combo points, targets, forms, spell procs, rage, ranged damage and absorption color')

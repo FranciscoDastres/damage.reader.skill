@@ -195,6 +195,10 @@ function Calculator:EstimateSpell(id, slot)
         local value, reason, state, handled = self:EstimatePaladin(id, slot)
         if handled then return value, reason, state end
     end
+    if self.EstimateClass then
+        local value, reason, state, handled = self:EstimateClass(id, slot)
+        if handled then return value, reason, state end
+    end
     for _, source in ipairs(self:GetSources(id, slot)) do
         local estimate = self:Parse(source.text)
         if estimate then
@@ -228,6 +232,10 @@ function Calculator:BuildReport()
         add("Cliente: " .. tostring(version) .. " / " .. tostring(build) .. " / " .. tostring(interface))
     end
     add("Idioma: " .. (type(GetLocale) == "function" and GetLocale() or "?"))
+    if type(UnitClass) == "function" then
+        local ok, _, class = pcall(UnitClass, "player")
+        if ok and readable(class, "string") then add("Clase: " .. class) end
+    end
     if self.GetActiveSeal then
         local seal, reason = self:GetActiveSeal()
         add("Sello activo: " .. tostring(seal) .. " / " .. tostring(reason or "legible"))
@@ -246,12 +254,15 @@ function Calculator:BuildReport()
     stat("Bonus daño sagrado", GetSpellBonusDamage, 2)
     stat("Poder de ataque", UnitAttackPower, "player")
     stat("Daño arma", UnitDamage, "player")
+    stat("Daño arma a distancia (velocidad, mínimo, máximo)", UnitRangedDamage, "player")
+    stat("Poder de ataque a distancia", UnitRangedAttackPower, "player")
     local seen = {}
     for slot = 1, 180 do
         local kind, id = self:GetActionInfo(slot)
         if kind == "spell" and not seen[id] then
             seen[id] = true
-            add("\nCasilla " .. slot .. " / hechizo " .. id)
+            local family = self.GetSpellFamily and self:GetSpellFamily(id) or self.GetPaladinFamily and self:GetPaladinFamily(id)
+            add("\nCasilla " .. slot .. " / hechizo " .. id .. " / familia " .. (family or "sin modelo específico"))
             local calculated, reason = self:EstimateAction(slot)
             add(calculated and ("Modelo: " .. calculated.text .. " — " .. calculated.metric) or reason)
             if calculated and calculated.evidence then add(calculated.evidence) end

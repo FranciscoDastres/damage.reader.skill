@@ -207,6 +207,13 @@ function ButtonManager:InvalidateActions(slot)
     end
 end
 
+function ButtonManager:InvalidateContext()
+    for _, button in ipairs(self.buttons) do
+        local value = button.DamageReaderSkillResult
+        if value and value.contextSensitive then self:HideButton(button) end
+    end
+end
+
 function ButtonManager:UpdateButton(button)
     if not ns.db or not ns.db.enabled then
         self:HideButton(button)
@@ -258,6 +265,7 @@ function ButtonManager:UpdateButton(button)
     text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", ns.db.fontSize, "OUTLINE")
     local color = result.kind == "heal" and ns.db.healColor
         or result.kind == "mana" and ns.db.manaColor
+        or result.kind == "energy" and ns.db.energyColor
         or result.kind == "absorb" and ns.db.absorbColor or ns.db.color
     text:SetTextColor(unpack(color))
     text:SetText((result.stale and "~" or "") .. result.text)

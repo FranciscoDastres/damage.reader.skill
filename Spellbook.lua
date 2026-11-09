@@ -18,7 +18,7 @@ function calc:RefreshSpellbook()
         if not safe(id, "number") or id <= 0 or seen[id] then return end
         seen[id] = true
         name = safe(name, "string") and name or self:GetSpellName(id)
-        local family = self:GetPaladinFamily(id, name)
+        local family = self.GetSpellFamily and self:GetSpellFamily(id, name) or self:GetPaladinFamily(id, name)
         spells[#spells + 1] = {id = id, name = name, family = family}
     end
     local modern = C_SpellBook

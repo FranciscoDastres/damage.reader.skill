@@ -1,7 +1,7 @@
 local ADDON_NAME, ns = ...
 
 ns.name = ADDON_NAME or "damage.reader.skill"
-ns.version = "0.5.0"
+ns.version = "0.6.0"
 
 local DEFAULTS = {
     enabled = true,
@@ -9,6 +9,7 @@ local DEFAULTS = {
     color = { 1.0, 0.82, 0.05 },
     healColor = { 0.20, 1.0, 0.20 },
     manaColor = { 0.35, 0.65, 1.0 },
+    energyColor = { 1.0, 0.9, 0.35 },
     absorbColor = { 0.75, 0.55, 1.0 },
     debug = false,
 }
@@ -251,7 +252,8 @@ function ns:OnEvent(event, addonName)
         return
     end
 
-    if event == "ACTIONBAR_SLOT_CHANGED" or event == "ACTIONBAR_PAGE_CHANGED"
+    if event == "PLAYER_TARGET_CHANGED" and self.Buttons then self.Buttons:InvalidateContext() end
+    if event == "ACTIONBAR_SLOT_CHANGED" or event == "ACTIONBAR_PAGE_CHANGED" or event == "UPDATE_SHAPESHIFT_FORM"
         or event:match("^UPDATE_.*ACTIONBAR$") or event == "SPELLS_CHANGED" then
         local slot
         if event == "ACTIONBAR_SLOT_CHANGED" and self.Calculator:IsReadable(addonName)
@@ -259,7 +261,8 @@ function ns:OnEvent(event, addonName)
         if self.Buttons then self.Buttons:InvalidateActions(slot) end
     end
     if event:match("^UNIT_") then
-        if not self.Calculator:IsReadable(addonName) or addonName ~= "player" then return end
+        if not self.Calculator:IsReadable(addonName) then return end
+        if addonName ~= "player" and not (event == "UNIT_COMBO_POINTS" and addonName == "target") then return end
     end
     if event == "UNIT_SPELLCAST_SUCCEEDED" and C_Timer and C_Timer.After then
         -- Aura state may land after the cast event. Never infer the seal from
@@ -303,3 +306,9 @@ eventFrame:RegisterEvent("UNIT_DAMAGE")
 eventFrame:RegisterEvent("UNIT_ATTACK_POWER")
 eventFrame:RegisterEvent("UNIT_ATTACK_SPEED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+eventFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+eventFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+for _, event in ipairs({"UNIT_POWER_UPDATE", "UNIT_POWER_FREQUENT", "UNIT_COMBO_POINTS", "UNIT_MAXPOWER",
+    "UNIT_RANGEDDAMAGE", "UNIT_RANGED_ATTACK_POWER"}) do
+    pcall(eventFrame.RegisterEvent, eventFrame, event)
+end
