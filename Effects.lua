@@ -50,6 +50,10 @@ function calc:ReadEffects(description, mode)
             or suffix:match("^%.%s") or suffix:match("^,") or suffix:match("^and ") or suffix:match("^y ")
             or suffix:match("^over ") or suffix:match("^durante ") or suffix:match("^every ") then
             if contains(clause, {"heal", "sana", "cura"}) then kind = "heal"
+            elseif mode == "mixed" and #entries > 0 and prefix:match(" y %s*$")
+                and suffix:match("^p%. extra durante ")
+                and not text:sub(entries[#entries].last + 1, first - 1):gsub("p%.", "p"):find("[%.;\n]") then
+                kind = entries[#entries].kind
             elseif #entries > 0 and contains(clause, {"additional", "another", "adicional", "otros"}) then
                 kind = entries[#entries].kind
             end

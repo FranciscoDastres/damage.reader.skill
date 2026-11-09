@@ -2,7 +2,15 @@
 
 Addon independiente para mostrar estimaciones sobre las barras de Blizzard. Destino: WoW Forever, Interface 16001. No incluye código ni tablas de DrDamage.
 
-## Versión 0.6.1: cifras claras durante el combate
+## Versión 0.6.2: correcciones con informes de las nueve clases
+
+Se corrigen las frases esMX de Golpe siniestro, Golpe heroico y Golpe de raptor para sumar el daño del arma y su bonificación. Bola de Fuego rango 1 separa el golpe inicial del daño periódico. Imposición de manos reconoce la fórmula de salud máxima del informe.
+
+Atacar muestra el golpe medio de la mano principal; Disparo automático, Lanzar y Disparar con varita muestran el promedio por disparo cuando el cliente publica daño a distancia válido. No son DPS. Sin arma/datos legibles no se inventa un valor. Las raciales, pasivas y profesiones observadas se identifican sin confundir sus estadísticas con daño.
+
+El informe conserva los textos originales y muestra el resultado del modelo; ya no añade debajo el fallo de un lector genérico que no corresponde a esa familia. Incluye salud máxima y solo informa del sello activo para paladines.
+
+## Lectura de las cifras durante el combate
 
 Se retiran los signos `~` y `≈` del comienzo de la cifra en la barra: con el tamaño pequeño podían parecer daño negativo. Una lectura pendiente de actualizar se ve como `18*`; una aproximación con arma como `55e`; y una cantidad base sin efecto adicional como `110+`. El tooltip explica los estados fuera de combate. Los informes conservan la notación de los modelos.
 
@@ -35,7 +43,7 @@ Las cantidades se distinguen en la etiqueta:
 - `110+`: base del remate sin conversión no modelada de energía adicional.
 - `*` al final: lectura anterior pendiente de actualizar; no se usa para un remate con puntos desconocidos ni para Ejecutar con ira/coste ilegibles.
 
-[CLASS_COVERAGE.md](CLASS_COVERAGE.md) detalla las limitaciones y las fuentes oficiales. Estas familias no equivalen a todas las habilidades y condiciones del juego verificadas. Faltan informes reales de las clases nuevas; las pruebas nuevas usan descripciones sintéticas claramente identificadas.
+[CLASS_COVERAGE.md](CLASS_COVERAGE.md) detalla las limitaciones y las fuentes oficiales. Estas familias no equivalen a todas las habilidades y condiciones del juego verificadas. Los informes recibidos cubren las nueve clases, principalmente sus habilidades iniciales. Hay pruebas con esos textos reales y otras sintéticas, identificadas por separado; aún falta verificar la actualización dentro del juego y ampliar rangos, talentos y habilidades avanzadas.
 
 ## Modelos del paladín conservados
 
@@ -78,11 +86,11 @@ Son estimaciones antes de mitigación, crítico y sobrecuración. No se añaden 
 
 No se modela la amplificación del perjuicio de Cruzado sobre el enemigo, la probabilidad de cada proc, la condición de aturdimiento de Sentencia de Orden ni el total de daño de todos los objetivos. Descripciones con varias cantidades del mismo tipo sin una regla clara se dejan sin estimación.
 
-El informe real disponible corresponde al paladín de Forever 1.60.1 / build 70862 / esMX y verifica las fórmulas iniciales. Los nuevos rangos y familias tienen pruebas sintéticas; falta validar sus descripciones y ejecución en el cliente real. La lista de familias no equivale a una certificación de todas las habilidades, talentos, traducciones o builds.
+Los informes de las nueve clases corresponden a Forever 1.60.1 / build 70862 / esMX. `tests/forever-classes.lua` comprueba sus descripciones y estadísticas; recursos, cambios de aura y salud máxima se simulan explícitamente. Ejecutar estas pruebas no reemplaza probar la actualización dentro del juego. La lista de familias no equivale a una certificación de todas las habilidades, talentos, traducciones o builds.
 
 ## Instalación
 
-Descomprime `dist/damage.reader.skill-0.6.1.zip` dentro de `Interface/AddOns`, reemplazando la carpeta `damage.reader.skill`. El archivo `damage.reader.skill.toc` debe quedar directamente dentro. Ejecuta `/reload` fuera de combate y confirma `/drs status`: versión 0.6.1.
+Descomprime `dist/damage.reader.skill-0.6.2.zip` dentro de `Interface/AddOns`, reemplazando la carpeta `damage.reader.skill`. El archivo `damage.reader.skill.toc` debe quedar directamente dentro. Ejecuta `/reload` fuera de combate y confirma `/drs status`: versión 0.6.2.
 
 Para verificar este cambio: prueba un ataque directo y uno periódico de tu clase, cambia de rango y repite en combate. Para pícaro/druida, comprueba remates con 0, 1 y 5 puntos de combo y al cambiar de objetivo. Para guerrero, comprueba Ejecutar con distintos niveles de ira. Los casos originales de Rectitud rango 2 y Furia siguen incluidos. Si falta un valor, `/drs report` incluye ahora el libro de hechizos completo disponible, además de las barras.
 
@@ -106,14 +114,19 @@ Ejecuta con Lua 5.1:
 ```sh
 lua5.1 tests/calculator.lua
 lua5.1 tests/forever-paladin.lua
+lua5.1 tests/forever-classes.lua
 lua5.1 tests/combat.lua
 lua5.1 tests/paladin-ranks.lua
 lua5.1 tests/classes.lua
 lua5.1 tests/display.lua
 ```
 
-Las suites cubren las ocho clases nuevas y sus eventos de combate, el informe original, rangos desconocidos previamente, Furia, aislamiento de Sentencia por rango, cambio de botones, datos protegidos, libro moderno/clásico, cantidades de daño/sanación/maná/absorción y regresiones de combate. Los fixtures nuevos están identificados como sintéticos; no certifican los valores del juego.
+Las suites cubren las ocho clases nuevas y sus eventos de combate, el informe original, rangos desconocidos previamente, Furia, aislamiento de Sentencia por rango, cambio de botones, datos protegidos, libro moderno/clásico, cantidades de daño/sanación/maná/absorción y regresiones de combate. Las pruebas indican qué datos vienen de informes reales y cuáles son sintéticos; no certifican todos los rangos ni el comportamiento del cliente en vivo.
 
 [Descripción oficial del paladín de Forever](https://news.blizzard.com/en-us/article/24302099/world-of-warcraft-forever-class-deep-dives-paladin): referencia de las familias y de los efectos separados de Furia. Sus valores pueden cambiar; el addon toma las cantidades del cliente.
 
 [Documentación de las APIs de libro de hechizos del cliente Blizzard](https://github.com/Gethe/wow-ui-source/blob/live/Interface/AddOns/Blizzard_APIDocumentationGenerated/SpellBookDocumentation.lua): referencia de la interfaz moderna, con fallback a la clásica y comprobación de disponibilidad.
+
+## Paquete y publicación
+
+`python3 scripts/package.py` genera el ZIP instalable en `dist/`, incluyendo solo los archivos del addon y documentación de uso/licencia. [Preparación para CurseForge](docs/curseforge/submission-checklist.md): campos, descripción, notas y pendientes concretos. Todavía no se ha publicado esta versión en CurseForge.

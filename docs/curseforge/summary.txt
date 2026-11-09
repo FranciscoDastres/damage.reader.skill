@@ -1,0 +1,1 @@
+Displays damage, healing and absorption estimates on your action buttons using readable spell descriptions and character stats.

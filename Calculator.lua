@@ -214,11 +214,14 @@ function Calculator:Report(slot)
     ns:Print("Casilla " .. slot .. ": " .. tostring(kind) .. " / " .. tostring(id))
     local calculated, reason = self:EstimateAction(slot)
     ns:Print(calculated and ("Modelo: " .. calculated.text .. " — " .. calculated.metric) or reason)
+    local family = self.GetSpellFamily and self:GetSpellFamily(id)
     for _, source in ipairs(self:GetSources(id, slot)) do
         ns:Print(source.name)
         for line in source.text:gmatch("[^\n]+") do ns:Print(line) end
-        local value, reason = self:Parse(source.text)
-        ns:Print(value and (value.kind .. " " .. value.min .. "-" .. value.max .. " => " .. value.text) or reason)
+        if not family then
+            local value, reason = self:Parse(source.text)
+            ns:Print(value and (value.kind .. " " .. value.min .. "-" .. value.max .. " => " .. value.text) or reason)
+        end
     end
 end
 
@@ -232,11 +235,12 @@ function Calculator:BuildReport()
         add("Cliente: " .. tostring(version) .. " / " .. tostring(build) .. " / " .. tostring(interface))
     end
     add("Idioma: " .. (type(GetLocale) == "function" and GetLocale() or "?"))
+    local playerClass
     if type(UnitClass) == "function" then
         local ok, _, class = pcall(UnitClass, "player")
-        if ok and readable(class, "string") then add("Clase: " .. class) end
+        if ok and readable(class, "string") then playerClass = class; add("Clase: " .. class) end
     end
-    if self.GetActiveSeal then
+    if self.GetActiveSeal and (not playerClass or playerClass == "PALADIN") then
         local seal, reason = self:GetActiveSeal()
         add("Sello activo: " .. tostring(seal) .. " / " .. tostring(reason or "legible"))
     end
@@ -251,6 +255,7 @@ function Calculator:BuildReport()
         add(name .. ": " .. table.concat(parts, ", "))
     end
     stat("Bonus sanación", GetSpellBonusHealing)
+    stat("Salud máxima", UnitHealthMax, "player")
     stat("Bonus daño sagrado", GetSpellBonusDamage, 2)
     stat("Poder de ataque", UnitAttackPower, "player")
     stat("Daño arma", UnitDamage, "player")
@@ -268,8 +273,10 @@ function Calculator:BuildReport()
             if calculated and calculated.evidence then add(calculated.evidence) end
             for _, source in ipairs(self:GetSources(id, slot)) do
                 add(source.name .. "\n" .. source.text)
-                local estimate, reason = self:Parse(source.text)
-                add(estimate and ("Resultado: " .. estimate.text .. " " .. estimate.kind .. "; " .. estimate.evidence) or reason)
+                if not family then
+                    local estimate, reason = self:Parse(source.text)
+                    add(estimate and ("Resultado: " .. estimate.text .. " " .. estimate.kind .. "; " .. estimate.evidence) or reason)
+                end
             end
         end
     end

@@ -1,7 +1,7 @@
 local ADDON_NAME, ns = ...
 
 ns.name = ADDON_NAME or "damage.reader.skill"
-ns.version = "0.6.1"
+ns.version = "0.6.2"
 
 local DEFAULTS = {
     enabled = true,

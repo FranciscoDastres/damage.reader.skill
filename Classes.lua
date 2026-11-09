@@ -1,6 +1,14 @@
 local _, ns = ...
 local calc = ns.Calculator
 local names, models = {}, {}
+-- Shared IDs observed in the Forever reports. No damage amounts are stored.
+local shared = {
+    [6603] = "meleeauto", [75] = "rangedauto", [5019] = "rangedauto", [2764] = "rangedauto",
+}
+for _, id in ipairs({1259718, 20600, 13262, 7411, 3908, 1296017, 1259799, 20580,
+    20594, 2481, 2580, 7731}) do shared[id] = "utility" end
+for _, id in ipairs({20598, 81, 1293657, 1293712, 20597, 20585, 20582, 1259721,
+    1259719, 107, 3127}) do shared[id] = "passive" end
 local function safe(value, kind)
     return calc:IsReadable(value) and type(value) == kind
 end
@@ -21,6 +29,7 @@ for class, groups in pairs(ns.ClassFamilies or {}) do
 end
 function calc:GetClassModel(id, suppliedName)
     if not safe(id, "number") then return end
+    if shared[id] then return {class = "GENERAL", mode = shared[id]} end
     if models[id] then return models[id] end
     local name = suppliedName or self:GetSpellName(id)
     if not safe(name, "string") then return end
@@ -64,7 +73,8 @@ local function comboPoints()
 end
 local function combo(id, text)
     local points = comboPoints()
-    if not points or points == 0 then return nil, "sin puntos de combo legibles", "empty" end
+    if not points then return nil, "puntos de combo no legibles", "empty" end
+    if points == 0 then return nil, "0 puntos de combo: el remate necesita al menos 1", "empty" end
     local selected, rows = nil, false
     for line in text:gmatch("[^\n]+") do
         local count, rest = line:match("^%s*(%d+)%s+combo points?%s*:%s*(.+)")
@@ -113,6 +123,8 @@ local function weapon(id, text, mode)
     local effects = calc:ReadEffects(text, "direct")
     local flatBonus = text:match("increases melee damage by (%d[%d%.,]*)") or text:match("increases ranged damage by (%d[%d%.,]*)")
         or text:match("aumenta el daño cuerpo a cuerpo en (%d[%d%.,]*)") or text:match("aumenta el daño a distancia en (%d[%d%.,]*)")
+        or text:match("aumenta (%d[%d%.,]*) p%. el daño cuerpo a cuerpo")
+        or text:match("inflige (%d[%d%.,]*) p%. más de daño con arma")
     local fraction, pctCount = nil, 0
     for _, pattern in ipairs({"(%d[%d%.,]*)%%%s*weapon damage", "(%d[%d%.,]*)%%%s*of weapon damage",
         "(%d[%d%.,]*)%%%s*de daño con arma", "(%d[%d%.,]*)%%%s*del daño del arma", "(%d[%d%.,]*)%%%s*del daño con arma"}) do
@@ -121,6 +133,7 @@ local function weapon(id, text, mode)
         end
     end
     local hasWeapon = text:find("weapon damage", 1, true) or text:find("daño del arma", 1, true)
+        or text:find("daño de arma normal", 1, true)
         or text:find("daño con arma", 1, true) or text:find("normal damage", 1, true)
         or text:find("daño normal", 1, true) or text:find("ranged damage", 1, true) or flatBonus
     if not hasWeapon then return calc:EffectResult(id, effects, text, "direct") end
@@ -206,6 +219,26 @@ local function execute(id, text)
         "No afirma que el objetivo esté en el umbral de vida requerido."}
     return value
 end
+local function autoAttack(id, mode)
+    local low, high
+    if mode == "rangedauto" then
+        local speed
+        speed, low, high = call(UnitRangedDamage, "player")
+        if not safe(speed, "number") or speed <= 0 or speed ~= speed or speed == math.huge then
+            return nil, "sin arma a distancia o velocidad legible", "empty", true
+        end
+    else low, high = call(UnitDamage, "player") end
+    if not safe(low, "number") or not safe(high, "number") or low <= 0 or high < low
+        or low ~= low or high ~= high or high == math.huge then
+        return nil, "daño de arma no disponible", "empty", true
+    end
+    local value = simple(id, low, high, "Daño actual publicado por el cliente",
+        mode == "rangedauto" and "Promedio por disparo, antes de mitigación y crítico"
+        or "Promedio por golpe de mano principal, antes de mitigación y crítico")
+    value.contextSensitive, value.class, value.family = true, "GENERAL", mode
+    value.details = {"No es DPS ni suma ambas manos. No añade poder de ataque otra vez."}
+    return value, nil, nil, true
+end
 function calc:EstimateClass(id, slot)
     local model = self:GetClassModel(id)
     if not model then return nil, nil, nil, false end
@@ -213,6 +246,8 @@ function calc:EstimateClass(id, slot)
         return nil, "modelos de clase requieren Forever 16001", nil, true
     end
     if model.mode == "utility" then return nil, "utilidad: sin daño o sanación directa", "empty", true end
+    if model.mode == "passive" then return nil, "pasiva: no representa daño o sanación por uso", "empty", true end
+    if model.mode == "meleeauto" or model.mode == "rangedauto" then return autoAttack(id, model.mode) end
     if model.mode == "conditional" then
         return nil, "efecto condicionado: requiere una fórmula específica del cliente", "empty", true
     end

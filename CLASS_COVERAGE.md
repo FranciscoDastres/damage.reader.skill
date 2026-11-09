@@ -1,4 +1,4 @@
-# Cobertura de clases — v0.6.1
+# Cobertura de clases — v0.6.2
 
 El addon reconoce familias por nombre (español/inglés), no por una lista incompleta de IDs de rango. `ClassData.lua` contiene el registro de las ocho clases nuevas; `Data.lua` conserva el registro del paladín. El libro de hechizos y las barras aportan los IDs de los rangos del personaje.
 
@@ -11,6 +11,7 @@ El addon reconoce familias por nombre (español/inglés), no por una lista incom
 | Efecto inicial + periódico | Dos cantidades del mismo tipo, una directa y otra periódica | Componentes separados, como Bola de Fuego, Fuego lunar, Inmolar o Recrecimiento. |
 | Daño y sanación | Dos cantidades explícitas de distinto tipo | Separadas. Nova/Penitencia según uso; Espiral de la muerte según sus dos efectos. |
 | Absorción | Una cantidad explícita asociada a absorber | Capacidad del escudo; no daño ni sanación. |
+| Ataque automático / varita / lanzamiento | UnitDamage o UnitRangedDamage legible y positivo | Golpe medio de mano principal o por disparo; no DPS ni ambas manos. |
 | Ataque con arma | Fórmula de arma publicada + UnitDamage o UnitRangedDamage legible | Aproximación marcada con `e` al final, antes de mitigación. Sin AP duplicado ni normalización interna inventada. |
 | Ambas armas | Texto explícito de ambas armas y dos rangos legibles | Aproximación; si no puede distinguir una bonificación por mano, no calcula. |
 | Remate | Puntos legibles y fila correspondiente en la tabla del tooltip | Cantidad para los puntos actuales; cero/desconocidos/filas ausentes ocultan el valor. |
@@ -34,9 +35,9 @@ Las habilidades de utilidad registradas no muestran daño. Las profesiones, invo
 
 ## Evidencia y pruebas
 
-El único informe real disponible sigue siendo el del paladín de Forever 1.60.1 / 70862 / esMX. `tests/classes.lua` usa cantidades sintéticas y IDs arbitrarios para comprobar las reglas de cada clase, distintos rangos y el rechazo de datos ambiguos/protegidos. `tests/combat.lua` prueba los eventos y la etiqueta real del addon con un cliente simulado.
+Se recibieron informes reales de las nueve clases de Forever 1.60.1 / 70862 / esMX. `tests/forever-classes.lua` reproduce los textos y estadísticas relevantes, con entradas simuladas explícitas para recursos, auras y salud máxima. La mayoría son habilidades de nivel inicial; no son un catálogo completo de todos los rangos. `tests/classes.lua` usa cantidades sintéticas y IDs arbitrarios para comprobar las reglas de cada clase, distintos rangos y el rechazo de datos ambiguos/protegidos. `tests/combat.lua` prueba los eventos y la etiqueta real del addon con un cliente simulado.
 
-Falta comprobar cada clase dentro del juego. `/drs report`, fuera de combate, incluye clase, estadísticas, IDs, descripciones del libro y resultado/motivo por habilidad para contrastar lo que expone esa build.
+Falta comprobar la versión corregida dentro del juego y recoger las habilidades avanzadas que aún no tienen evidencia real. `/drs report`, fuera de combate, incluye clase, estadísticas, IDs, descripciones del libro y resultado/motivo por habilidad para contrastar lo que expone esa build.
 
 ## Fuentes de diseño
 

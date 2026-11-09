@@ -218,6 +218,7 @@ local function healthEffect(id, family, text)
     local matched, pct
     if family == "lay" then
         matched = text:find("igual a la salud máxima del paladín", 1, true) or text:find("igual a la vida máxima del paladín", 1, true)
+            or text:find("la misma cantidad de puntos que la salud máxima del paladín", 1, true)
             or text:find("equal to the paladin's maximum health", 1, true) or text:find("equal to the paladin's max health", 1, true)
         pct = 100
     else
